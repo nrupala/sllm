@@ -1,0 +1,18 @@
+site_name: SL-LLM
+site_description: Self-Learning LLM - An autonomous AI agent with recursive self-improvement
+site_url: https://nrupala.github.io/sllm
+
+theme:
+  name: material
+  palette:
+    - primary: blue
+    - accent: cyan
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Tools: tools.md
+  - API: api.md
+
+markdown_extensions:
+  - codehilite
