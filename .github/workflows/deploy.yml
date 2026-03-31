@@ -34,8 +34,6 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-    permissions:
       pages: write
       id-token: write
     
