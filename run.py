@@ -1,5 +1,11 @@
 """
-SL-LLM Entry Point with Enhanced Knowledge Graph RAG
+SL-LLM Entry Point with Full Cognitive Integration
+- Knowledge Graph RAG
+- Design Pattern Recognition
+- Agentification  
+- Agency with Reasoning Trace
+- Sentient Thinking
+- Thinking Toolbox (Psychology, Logic, Graph Theory, etc.)
 Usage: python run.py [--test] [--prefer=lmstudio|ollama|mock] [--verbose]
 """
 
@@ -25,6 +31,13 @@ llm_client = get_client(prefer=prefer)
 from tools.builtin import get_default_tools, execute_tool
 from knowledge_graph_manager import FluidKnowledgeGraph, get_enhanced_context
 
+# New cognitive systems
+from core.thinking_engine import get_reasoning_engine
+from core.pattern_recognition import get_pattern_recognizer
+from core.agentification import get_coding_team, get_self_improvement_team
+from core.agency import get_agency, DecisionType
+from core.sentient_thinking import get_sentient_thinking, ThoughtType
+
 
 class SelfLearningLLM:
     def __init__(self, model="qwen2.5-coder", verbose=False):
@@ -34,11 +47,25 @@ class SelfLearningLLM:
         self.verbose = verbose
         self.kgm = FluidKnowledgeGraph()
         
+        # Initialize cognitive systems
+        self.reasoning = get_reasoning_engine()
+        self.patterns = get_pattern_recognizer()
+        self.coding_team = get_coding_team()
+        self.self_improvement_team = get_self_improvement_team()
+        self.agency = get_agency()
+        self.sentient = get_sentient_thinking()
+        
+        # Set up agency
+        self.agency.add_value("accuracy", 0.8)
+        self.agency.add_value("efficiency", 0.6)
+        self.agency.add_value("safety", 0.9)
+        
         stats = self.kgm._get_category_counts()
         
         print(f"SL-LLM initialized with {self.model}")
         print(f"Tools: {[t['function']['name'] for t in self.tools]}")
         print(f"Knowledge Graph: {stats.get('bug_fix', 0)} bugs, {stats.get('performance', 0)} optimizations stored")
+        print(f"Cognitive Systems: Reasoning, Patterns, Agentification, Agency, Sentient Thinking")
         if self.verbose:
             print("[VERBOSE MODE: ON]")
 
@@ -54,6 +81,27 @@ class SelfLearningLLM:
 
     def execute_task(self, task: str, max_iterations: int = 5) -> Dict:
         self._verbose_print("RECEIVING TASK", task)
+        
+        # === SENTIENT THINKING: Process incoming task ===
+        self.sentient.think(task, ThoughtType.PERCEPTION)
+        
+        # === THINKING TOOLBOX: Multi-disciplinary reasoning ===
+        reasoning_result = self.reasoning.reason(task)
+        self._verbose_print("REASONING", f"Lateral perspectives: {len(reasoning_result.get('lateral_perspectives', []))}")
+        
+        # === AGENCY: Make decision on approach ===
+        options = [
+            {"name": "direct_execution", "score": 0.7, "pros": ["fast"], "cons": ["may miss edge cases"]},
+            {"name": "reasoned_approach", "score": 0.8, "pros": ["thorough"], "cons": ["slower"]},
+            {"name": "pattern_matching", "score": 0.6, "pros": ["proven patterns"], "cons": ["may not fit"]}
+        ]
+        decision = self.agency.make_decision(task, options)
+        self._verbose_print("AGENCY DECISION", f"Chose: {decision.chosen_option.get('name')}, Confidence: {decision.confidence:.0%}")
+        
+        # === DESIGN PATTERN RECOGNITION ===
+        pattern_suggestion = self.patterns.suggest_pattern(task)
+        if pattern_suggestion:
+            self._verbose_print("PATTERNS", f"Suggested: {[p['name'] for p in pattern_suggestion.get('suggested_patterns', [])]}")
         
         # Get enhanced knowledge graph context
         self._verbose_print("KNOWLEDGE GRAPH", "Analyzing and retrieving relevant memories...")
