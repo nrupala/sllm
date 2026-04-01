@@ -4,127 +4,127 @@
   "failed": 1,
   "tests": [
     {
-      "timestamp": "2026-03-31T17:49:56.373650",
+      "timestamp": "2026-04-01T00:14:28.101403",
       "test": "Tool: file_read",
       "passed": true,
-      "details": "Read 3409 chars"
+      "details": "Read 10486 chars"
     },
     {
-      "timestamp": "2026-03-31T17:49:56.374661",
+      "timestamp": "2026-04-01T00:14:28.101861",
       "test": "Tool: file_write",
       "passed": true,
       "details": "Written to D:/sl/projects/sllm/test_run_samples/te"
     },
     {
-      "timestamp": "2026-03-31T17:49:56.375713",
+      "timestamp": "2026-04-01T00:14:28.102415",
       "test": "Tool: list_directory",
       "passed": true,
-      "details": "Found 22 items"
+      "details": "Found 31 items"
     },
     {
-      "timestamp": "2026-03-31T17:49:56.477989",
+      "timestamp": "2026-04-01T00:14:28.156292",
       "test": "Tool: execute_code",
       "passed": true,
       "details": "hello from sandbox\n"
     },
     {
-      "timestamp": "2026-03-31T17:49:56.683065",
+      "timestamp": "2026-04-01T00:14:28.298683",
       "test": "Tool: get_system_info",
       "passed": true,
       "details": "{\"platform\": \"Windows-11-10.0.26200-SP0\", \"python\""
     },
     {
-      "timestamp": "2026-03-31T17:49:57.769025",
+      "timestamp": "2026-04-01T00:14:29.358953",
       "test": "Self-reflection on output",
       "passed": true,
-      "details": "Analysis length: 176 chars"
+      "details": "Analysis length: 110 chars"
     },
     {
-      "timestamp": "2026-03-31T17:49:58.270122",
+      "timestamp": "2026-04-01T00:14:29.859504",
       "test": "Can suggest improvements",
       "passed": true,
       "details": "Suggestion: def fibonacci(n):\n    if n <= 0: return 0\n    elif n == 1: r"
     },
     {
-      "timestamp": "2026-03-31T17:49:58.364353",
+      "timestamp": "2026-04-01T00:14:29.916914",
       "test": "Create checkpoint",
       "passed": true,
       "details": "Checkpoint: test_checkpoint"
     },
     {
-      "timestamp": "2026-03-31T17:49:58.364554",
+      "timestamp": "2026-04-01T00:14:29.917030",
       "test": "Dry-run modification",
       "passed": false,
       "details": "{'success': False, 'error': 'Path not allowed for modificati"
     },
     {
-      "timestamp": "2026-03-31T17:49:58.401693",
+      "timestamp": "2026-04-01T00:14:29.937280",
       "test": "Restore checkpoint",
       "passed": true,
       "details": "Restored successfully"
     },
     {
-      "timestamp": "2026-03-31T17:49:58.409831",
+      "timestamp": "2026-04-01T00:14:29.938969",
       "test": "Save/retrieve episodes",
       "passed": true,
       "details": "Retrieved 1 episodes"
     },
     {
-      "timestamp": "2026-03-31T17:49:58.410003",
+      "timestamp": "2026-04-01T00:14:29.939090",
       "test": "Memory files persist",
       "passed": true,
       "details": "Files: True, True"
     },
     {
-      "timestamp": "2026-03-31T17:49:58.437324",
+      "timestamp": "2026-04-01T00:14:29.950483",
       "test": "Create snapshot",
       "passed": true,
       "details": "Snapshot: test_snap"
     },
     {
-      "timestamp": "2026-03-31T17:49:58.437703",
+      "timestamp": "2026-04-01T00:14:29.950742",
       "test": "List snapshots",
       "passed": true,
-      "details": "Found 2 snapshots"
+      "details": "Found 4 snapshots"
     },
     {
-      "timestamp": "2026-03-31T17:49:58.468264",
+      "timestamp": "2026-04-01T00:14:29.968017",
       "test": "Restore snapshot",
       "passed": true,
       "details": "Restored from snapshot"
     },
     {
-      "timestamp": "2026-03-31T17:49:58.471311",
+      "timestamp": "2026-04-01T00:14:29.969384",
       "test": "Add custom benchmark",
       "passed": true,
       "details": "Benchmarks: 1"
     },
     {
-      "timestamp": "2026-03-31T17:49:58.599558",
+      "timestamp": "2026-04-01T00:14:30.072501",
       "test": "GPU detection",
       "passed": true,
       "details": "Type: nvidia, Info: GPU 0: NVIDIA GeForce RTX 3080 Laptop GP"
     },
     {
-      "timestamp": "2026-03-31T17:49:59.099841",
+      "timestamp": "2026-04-01T00:14:30.572959",
       "test": "Agent task execution",
       "passed": true,
       "details": "Output length: 135"
     },
     {
-      "timestamp": "2026-03-31T17:49:59.099878",
+      "timestamp": "2026-04-01T00:14:30.573007",
       "test": "Generated valid code",
       "passed": true,
       "details": "Contains function definition"
     },
     {
-      "timestamp": "2026-03-31T17:49:59.600842",
+      "timestamp": "2026-04-01T00:14:31.073701",
       "test": "Reflection generates analysis",
       "passed": true,
       "details": "Keys: ['analysis', 'should_modify', 'improvement_plan']"
     },
     {
-      "timestamp": "2026-03-31T17:49:59.600895",
+      "timestamp": "2026-04-01T00:14:31.073733",
       "test": "Can trigger modification",
       "passed": true,
       "details": "Should modify: False"

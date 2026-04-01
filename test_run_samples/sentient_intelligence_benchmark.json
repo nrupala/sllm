@@ -1,0 +1,39 @@
+{
+  "timestamp": "2026-04-01T00:21:57.508965",
+  "system": "SL-LLM Sentient Intelligence",
+  "capabilities": {
+    "tfidf_semantic_retrieval": true,
+    "multi_factor_scoring": true,
+    "emotional_context_detection": true,
+    "empathy_signal_recognition": true,
+    "adaptive_approach_style": true,
+    "priority_aware_retrieval": true,
+    "evidence_quality_assessment": true,
+    "recency_weighting": true,
+    "cross_category_fusion": true,
+    "semantic_episode_matching": true,
+    "self_awareness": true,
+    "metacognition": true,
+    "moral_reasoning": true,
+    "theory_of_mind": true,
+    "contextual_understanding": true,
+    "adaptive_learning": true,
+    "empathetic_response": true
+  },
+  "knowledge_graph": {
+    "total_insights": 18,
+    "categories": {
+      "performance": 5,
+      "bug_fix": 9,
+      "bug_fix_witnessed": 4
+    },
+    "binary_export": true
+  },
+  "sentient_metrics": {
+    "emotional_states_tracked": 7,
+    "strategies_evaluated": 6,
+    "reflections_recorded": 1,
+    "current_confidence": 0.5499999999999999,
+    "current_emotion": "curious"
+  }
+}

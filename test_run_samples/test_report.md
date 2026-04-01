@@ -1,6 +1,6 @@
 # SL-LLM Test Results
 
-**Date:** 2026-03-31 17:49:59
+**Date:** 2026-04-01 00:14:31
 
 ## Summary
 
@@ -11,13 +11,13 @@
 ## Test Details
 
 ### PASS Tool: file_read
-**Details:** Read 3409 chars
+**Details:** Read 10486 chars
 
 ### PASS Tool: file_write
 **Details:** Written to D:/sl/projects/sllm/test_run_samples/te
 
 ### PASS Tool: list_directory
-**Details:** Found 22 items
+**Details:** Found 31 items
 
 ### PASS Tool: execute_code
 **Details:** hello from sandbox
@@ -27,7 +27,7 @@
 **Details:** {"platform": "Windows-11-10.0.26200-SP0", "python"
 
 ### PASS Self-reflection on output
-**Details:** Analysis length: 176 chars
+**Details:** Analysis length: 110 chars
 
 ### PASS Can suggest improvements
 **Details:** Suggestion: def fibonacci(n):
@@ -53,7 +53,7 @@
 **Details:** Snapshot: test_snap
 
 ### PASS List snapshots
-**Details:** Found 2 snapshots
+**Details:** Found 4 snapshots
 
 ### PASS Restore snapshot
 **Details:** Restored from snapshot

@@ -1,7 +1,7 @@
 {
   "knowledge_graph": {
     "version": "1.0",
-    "created": "2026-03-31T19:09:58.402289",
+    "created": "2026-04-01T00:14:23.443588",
     "entities": [
       {
         "id": "insight_0",
@@ -81,7 +81,35 @@
         "timestamp": "2026-03-31T19:09:27.635098"
       },
       {
-        "id": "episode_11",
+        "id": "insight_11",
+        "type": "learned_insight",
+        "content": "Always check for division by zero before performing division",
+        "category": "bug_fix",
+        "timestamp": "2026-03-31T19:17:51.160797"
+      },
+      {
+        "id": "insight_12",
+        "type": "learned_insight",
+        "content": "Witnessed error: \n[STDERR]\nTraceback (most recent call last):\n  File \"C:\\Users\\nrupa\\AppData\\Loca. Fix: Add zero-check before division.",
+        "category": "bug_fix_witnessed",
+        "timestamp": "2026-03-31T19:20:52.177363"
+      },
+      {
+        "id": "insight_13",
+        "type": "learned_insight",
+        "content": "Witnessed error: \n[STDERR]\nTraceback (most recent call last):\n  File \"C:\\Users\\nrupa\\AppData\\Loca. Fix: Add zero-check before division.",
+        "category": "bug_fix_witnessed",
+        "timestamp": "2026-03-31T19:22:09.880156"
+      },
+      {
+        "id": "insight_14",
+        "type": "learned_insight",
+        "content": "Witnessed error: \n[STDERR]\nTraceback (most recent call last):\n  File \"C:\\Users\\nrupa\\AppData\\Loca. Fix: Add zero-check before division.",
+        "category": "bug_fix_witnessed",
+        "timestamp": "2026-03-31T19:43:06.747851"
+      },
+      {
+        "id": "episode_15",
         "type": "task_episode",
         "task": "Test task",
         "result": "Success",
@@ -92,7 +120,7 @@
         }
       },
       {
-        "id": "episode_12",
+        "id": "episode_16",
         "type": "task_episode",
         "task": "Test task",
         "result": "Success",
@@ -103,7 +131,7 @@
         }
       },
       {
-        "id": "episode_13",
+        "id": "episode_17",
         "type": "task_episode",
         "task": "Test task",
         "result": "Success",
@@ -114,7 +142,7 @@
         }
       },
       {
-        "id": "episode_14",
+        "id": "episode_18",
         "type": "task_episode",
         "task": "Test task",
         "result": "Success",
@@ -125,7 +153,7 @@
         }
       },
       {
-        "id": "episode_15",
+        "id": "episode_19",
         "type": "task_episode",
         "task": "Division function with zero-check",
         "result": "Success",
@@ -138,7 +166,7 @@
         }
       },
       {
-        "id": "episode_16",
+        "id": "episode_20",
         "type": "task_episode",
         "task": "Division function with zero-check",
         "result": "Partial",
@@ -151,7 +179,7 @@
         }
       },
       {
-        "id": "episode_17",
+        "id": "episode_21",
         "type": "task_episode",
         "task": "Division function with zero-check",
         "result": "Success",
@@ -164,7 +192,7 @@
         }
       },
       {
-        "id": "episode_18",
+        "id": "episode_22",
         "type": "task_episode",
         "task": "Division function with zero-check",
         "result": "Success",
@@ -177,7 +205,7 @@
         }
       },
       {
-        "id": "episode_19",
+        "id": "episode_23",
         "type": "task_episode",
         "task": "Division function with zero-check",
         "result": "Success",
@@ -190,7 +218,7 @@
         }
       },
       {
-        "id": "episode_20",
+        "id": "episode_24",
         "type": "task_episode",
         "task": "Division function with zero-check",
         "result": "Success",
@@ -203,13 +231,65 @@
         }
       },
       {
-        "id": "episode_21",
+        "id": "episode_25",
         "type": "task_episode",
         "task": "Division function with zero-check",
         "result": "Success",
         "timestamp": "2026-03-31T19:09:27.633892",
         "metrics": {
           "error_detected": false,
+          "reflection_quality": 454,
+          "fix_applied": true,
+          "verification_passed": true
+        }
+      },
+      {
+        "id": "episode_26",
+        "type": "task_episode",
+        "task": "Division function with zero-check",
+        "result": "Success",
+        "timestamp": "2026-03-31T19:17:51.159543",
+        "metrics": {
+          "error_detected": false,
+          "reflection_quality": 454,
+          "fix_applied": true,
+          "verification_passed": true
+        }
+      },
+      {
+        "id": "episode_27",
+        "type": "task_episode",
+        "task": "Division function - witnessed error then fixed",
+        "result": "Success",
+        "timestamp": "2026-03-31T19:20:52.176648",
+        "metrics": {
+          "error_witnessed": true,
+          "reflection_quality": 454,
+          "fix_applied": true,
+          "verification_passed": true
+        }
+      },
+      {
+        "id": "episode_28",
+        "type": "task_episode",
+        "task": "Division function - witnessed error then fixed",
+        "result": "Success",
+        "timestamp": "2026-03-31T19:22:09.879464",
+        "metrics": {
+          "error_witnessed": true,
+          "reflection_quality": 454,
+          "fix_applied": true,
+          "verification_passed": true
+        }
+      },
+      {
+        "id": "episode_29",
+        "type": "task_episode",
+        "task": "Division function - witnessed error then fixed",
+        "result": "Success",
+        "timestamp": "2026-03-31T19:43:06.746944",
+        "metrics": {
+          "error_witnessed": true,
           "reflection_quality": 454,
           "fix_applied": true,
           "verification_passed": true

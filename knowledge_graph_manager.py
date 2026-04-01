@@ -11,6 +11,8 @@ SL-LLM Enhanced Knowledge Graph Manager
 import json
 import os
 import hashlib
+import math
+import re
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Optional, Tuple, Set
@@ -41,10 +43,10 @@ class KnowledgeClassifier:
     }
     
     @classmethod
-    def classify(cls, text: str, metadata: dict = None) -> Dict:
+    def classify(cls, text: str, metadata: dict = {}) -> Dict:
         """Classify a knowledge entry"""
         text_lower = text.lower()
-        scores = {}
+        scores: Dict[str, int] = {}
         
         # Category scoring
         for category, keywords in cls.CATEGORIES.items():
@@ -53,19 +55,25 @@ class KnowledgeClassifier:
                 scores[category] = score
         
         # Get top category
-        top_category = max(scores, key=scores.get) if scores else "general"
+        if scores:
+            top_category = sorted(scores.keys(), key=lambda k: scores[k], reverse=True)[0]
+        else:
+            top_category = "general"
         
         # Context detection
         detected_contexts = []
-        for ctx_type, keywords in cls.CONTEXTS.items():
-            if any(kw in text_lower for kw in keywords):
+        for ctx_type, ctx_keywords in cls.CONTEXTS.items():
+            if any(kw in text_lower for kw in ctx_keywords):
                 detected_contexts.append(ctx_type)
+        
+        # Get keywords for top category for confidence calculation
+        top_keywords = cls.CATEGORIES.get(top_category, [])
         
         return {
             "primary_category": top_category,
             "all_categories": scores,
             "contexts": detected_contexts,
-            "confidence": scores.get(top_category, 0) / max(len(keywords), 1) if scores else 0
+            "confidence": scores.get(top_category, 0) / max(len(top_keywords), 1) if scores else 0
         }
 
 
@@ -202,6 +210,376 @@ class KnowledgeAmalgamator:
         return dict(combined)
 
 
+class TFIDFRetriever:
+    """TF-IDF based semantic similarity for knowledge retrieval"""
+    
+    STOP_WORDS = {
+        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
+        "have", "has", "had", "do", "does", "did", "will", "would", "could",
+        "should", "may", "might", "must", "shall", "can", "need", "dare",
+        "ought", "used", "to", "of", "in", "for", "on", "with", "at", "by",
+        "from", "as", "into", "through", "during", "before", "after", "above",
+        "below", "between", "out", "off", "over", "under", "again", "further",
+        "then", "once", "here", "there", "when", "where", "why", "how", "all",
+        "both", "each", "few", "more", "most", "other", "some", "such", "no",
+        "not", "only", "own", "same", "so", "than", "too", "very", "just",
+        "because", "but", "and", "or", "if", "while", "about", "against",
+        "this", "that", "these", "those", "i", "me", "my", "we", "our", "you",
+        "your", "he", "him", "his", "she", "her", "it", "its", "they", "them",
+        "their", "what", "which", "who", "whom", "also", "up", "down", "any",
+    }
+    
+    @staticmethod
+    def tokenize(text: str) -> List[str]:
+        """Tokenize text into words, removing stop words and punctuation"""
+        text = text.lower()
+        tokens = re.findall(r'\b[a-z_]+\b', text)
+        return [t for t in tokens if t not in TFIDFRetriever.STOP_WORDS and len(t) > 2]
+    
+    @staticmethod
+    def compute_tf(tokens: List[str]) -> Dict[str, float]:
+        """Compute term frequency for a document"""
+        tf: Dict[str, int] = defaultdict(int)
+        for token in tokens:
+            tf[token] += 1
+        total = len(tokens)
+        if total == 0:
+            return {}
+        return {word: count / total for word, count in tf.items()}
+    
+    @staticmethod
+    def compute_idf(documents: List[List[str]]) -> Dict[str, float]:
+        """Compute inverse document frequency across all documents"""
+        n_docs = len(documents)
+        if n_docs == 0:
+            return {}
+        df: Dict[str, int] = defaultdict(int)
+        for doc_tokens in documents:
+            unique_tokens = set(doc_tokens)
+            for token in unique_tokens:
+                df[token] += 1
+        return {word: math.log(n_docs / (1 + freq)) + 1 for word, freq in df.items()}
+    
+    @staticmethod
+    def cosine_similarity(vec1: Dict[str, float], vec2: Dict[str, float]) -> float:
+        """Compute cosine similarity between two sparse vectors"""
+        all_keys = set(vec1.keys()) | set(vec2.keys())
+        if not all_keys:
+            return 0.0
+        dot_product = sum(vec1.get(k, 0) * vec2.get(k, 0) for k in all_keys)
+        norm1 = math.sqrt(sum(v ** 2 for v in vec1.values()))
+        norm2 = math.sqrt(sum(v ** 2 for v in vec2.values()))
+        if norm1 == 0 or norm2 == 0:
+            return 0.0
+        return dot_product / (norm1 * norm2)
+    
+    @staticmethod
+    def compute_tfidf_vector(tokens: List[str], idf: Dict[str, float]) -> Dict[str, float]:
+        """Compute TF-IDF vector for a document"""
+        tf = TFIDFRetriever.compute_tf(tokens)
+        return {word: tf_val * idf.get(word, 0) for word, tf_val in tf.items()}
+
+
+class MultiFactorScorer:
+    """Multi-factor relevance scoring combining multiple signals"""
+    
+    WEIGHTS = {
+        "tfidf_similarity": 0.40,
+        "keyword_overlap": 0.20,
+        "category_match": 0.20,
+        "recency": 0.10,
+        "evidence_quality": 0.10,
+    }
+    
+    @staticmethod
+    def keyword_overlap(query_tokens: List[str], doc_tokens: List[str]) -> float:
+        """Calculate keyword overlap ratio"""
+        if not query_tokens or not doc_tokens:
+            return 0.0
+        query_set = set(query_tokens)
+        doc_set = set(doc_tokens)
+        overlap = len(query_set & doc_set)
+        return overlap / len(query_set)
+    
+    @staticmethod
+    def category_match_score(query_category: str, doc_category: str) -> float:
+        """Score category match between query and document"""
+        if query_category == doc_category:
+            return 1.0
+        related_categories = {
+            "bug_fix": ["bug_fix_witnessed", "validation"],
+            "bug_fix_witnessed": ["bug_fix", "validation"],
+            "optimization": ["performance", "pattern"],
+            "performance": ["optimization", "pattern"],
+            "pattern": ["optimization", "concept"],
+            "concept": ["pattern", "api"],
+            "api": ["concept", "data"],
+            "data": ["api", "security"],
+            "security": ["data", "validation"],
+            "validation": ["bug_fix", "security"],
+        }
+        related = related_categories.get(query_category, [])
+        if doc_category in related:
+            return 0.6
+        return 0.1
+    
+    @staticmethod
+    def recency_score(timestamp: str, max_age_days: float = 30.0) -> float:
+        """Calculate recency score (newer = higher score)"""
+        try:
+            doc_time = datetime.fromisoformat(timestamp)
+            age = (datetime.now() - doc_time).total_seconds() / 86400
+            return max(0.0, 1.0 - (age / max_age_days))
+        except:
+            return 0.5
+    
+    @staticmethod
+    def evidence_quality_score(insight: Dict) -> float:
+        """Score the quality of evidence in an insight"""
+        score = 0.0
+        content = insight.get("insight", "")
+        if len(content) > 50:
+            score += 0.3
+        if len(content) > 100:
+            score += 0.2
+        if "witnessed" in insight.get("category", "").lower():
+            score += 0.3
+        if "traceback" in content.lower() or "error" in content.lower():
+            score += 0.2
+        return min(1.0, score)
+    
+    @classmethod
+    def compute_relevance(cls, query: str, insight: Dict, classification: Dict,
+                         tfidf_sim: float, idf: Dict[str, float]) -> Dict:
+        """Compute multi-factor relevance score"""
+        query_tokens = TFIDFRetriever.tokenize(query)
+        doc_tokens = TFIDFRetriever.tokenize(insight.get("insight", ""))
+        
+        keyword_score = cls.keyword_overlap(query_tokens, doc_tokens)
+        category_score = cls.category_match_score(
+            classification.get("primary_category", "general"),
+            insight.get("category", "general")
+        )
+        recency_score = cls.recency_score(insight.get("timestamp", ""))
+        evidence_score = cls.evidence_quality_score(insight)
+        
+        weighted_score = (
+            tfidf_sim * cls.WEIGHTS["tfidf_similarity"] +
+            keyword_score * cls.WEIGHTS["keyword_overlap"] +
+            category_score * cls.WEIGHTS["category_match"] +
+            recency_score * cls.WEIGHTS["recency"] +
+            evidence_score * cls.WEIGHTS["evidence_quality"]
+        )
+        
+        return {
+            "insight": insight,
+            "score": round(weighted_score, 4),
+            "breakdown": {
+                "tfidf_similarity": round(tfidf_sim, 4),
+                "keyword_overlap": round(keyword_score, 4),
+                "category_match": round(category_score, 4),
+                "recency": round(recency_score, 4),
+                "evidence_quality": round(evidence_score, 4),
+            }
+        }
+
+
+class SentientRetrievalAugmentor:
+    """Adds emotional intelligence and sentient awareness to knowledge retrieval"""
+    
+    EMOTIONAL_CONTEXTS = {
+        "error": {"emotion": "concerned", "approach": "careful", "priority": "high"},
+        "bug": {"emotion": "cautious", "approach": "analytical", "priority": "high"},
+        "fail": {"emotion": "concerned", "approach": "diagnostic", "priority": "high"},
+        "broken": {"emotion": "concerned", "approach": "analytical", "priority": "high"},
+        "crash": {"emotion": "concerned", "approach": "diagnostic", "priority": "high"},
+        "crashing": {"emotion": "concerned", "approach": "diagnostic", "priority": "high"},
+        "fix": {"emotion": "focused", "approach": "solution-oriented", "priority": "medium"},
+        "success": {"emotion": "satisfied", "approach": "document", "priority": "low"},
+        "solved": {"emotion": "satisfied", "approach": "document", "priority": "low"},
+        "worked": {"emotion": "satisfied", "approach": "document", "priority": "low"},
+        "optimize": {"emotion": "curious", "approach": "exploratory", "priority": "medium"},
+        "faster": {"emotion": "curious", "approach": "exploratory", "priority": "medium"},
+        "efficient": {"emotion": "curious", "approach": "exploratory", "priority": "medium"},
+        "learn": {"emotion": "curious", "approach": "absorb", "priority": "medium"},
+        "understand": {"emotion": "focused", "approach": "deep-dive", "priority": "medium"},
+        "help": {"emotion": "empathetic", "approach": "supportive", "priority": "high"},
+        "create": {"emotion": "optimistic", "approach": "creative", "priority": "medium"},
+        "build": {"emotion": "optimistic", "approach": "creative", "priority": "medium"},
+    }
+    
+    EMPATHY_SIGNALS = {
+        "frustrated": ["doesn't work", "still broken", "why isn't", "can't figure", "stuck",
+                       "so frustrated", "frustrated", "nothing works", "not working",
+                       "keeps happening", "won't work", "doesn't make sense"],
+        "confused": ["don't understand", "how does", "what is", "explain", "confused",
+                     "don't get", "not sure", "unclear"],
+        "urgent": ["urgent", "asap", "critical", "immediately", "production", "down",
+                   "customers are complaining", "right now", "emergency"],
+        "learning": ["learning", "trying to understand", "new to", "beginner", "trying to learn",
+                     "can you teach", "help me learn"],
+    }
+    
+    @classmethod
+    def detect_emotional_context(cls, query: str) -> Dict:
+        """Detect the emotional undertone of a query"""
+        query_lower = query.lower()
+        
+        detected_emotions = []
+        detected_signals = []
+        
+        # Check empathy signals FIRST (they're more specific)
+        for signal_type, phrases in cls.EMPATHY_SIGNALS.items():
+            if any(phrase in query_lower for phrase in phrases):
+                detected_signals.append(signal_type)
+        
+        # Check emotional contexts
+        for word, context in cls.EMOTIONAL_CONTEXTS.items():
+            if word in query_lower:
+                detected_emotions.append(context)
+        
+        # Determine primary emotion based on signals and contexts
+        if detected_signals:
+            if "urgent" in detected_signals:
+                primary_emotion = {
+                    "emotion": "concerned",
+                    "approach": "diagnostic",
+                    "priority": "high",
+                }
+            elif "frustrated" in detected_signals:
+                primary_emotion = {
+                    "emotion": "empathetic",
+                    "approach": "supportive",
+                    "priority": "high",
+                }
+            elif "confused" in detected_signals:
+                primary_emotion = {
+                    "emotion": "curious",
+                    "approach": "educational",
+                    "priority": "medium",
+                }
+            elif "learning" in detected_signals:
+                primary_emotion = {
+                    "emotion": "curious",
+                    "approach": "educational",
+                    "priority": "medium",
+                }
+            else:
+                primary_emotion = detected_emotions[0] if detected_emotions else {
+                    "emotion": "neutral",
+                    "approach": "standard",
+                    "priority": "medium",
+                }
+        else:
+            primary_emotion = detected_emotions[0] if detected_emotions else {
+                "emotion": "neutral",
+                "approach": "standard",
+                "priority": "medium",
+            }
+        
+        return {
+            "primary_emotion": primary_emotion["emotion"],
+            "approach_style": primary_emotion["approach"],
+            "priority": primary_emotion["priority"],
+            "user_signals": detected_signals,
+            "empathy_needed": len(detected_signals) > 0,
+        }
+    
+    @classmethod
+    def augment_retrieval(cls, insights: List[Dict], emotional_context: Dict) -> List[Dict]:
+        """Augment retrieved insights with emotional intelligence"""
+        if not insights:
+            return insights
+        
+        augmented = []
+        for ins in insights:
+            ins_copy = dict(ins)
+            ins_copy["emotional_relevance"] = cls._compute_emotional_relevance(
+                ins, emotional_context
+            )
+            augmented.append(ins_copy)
+        
+        # Re-rank with emotional relevance
+        priority_boost = {"high": 0.15, "medium": 0.0, "low": -0.05}
+        boost = priority_boost.get(emotional_context.get("priority", "medium"), 0.0)
+        
+        for ins in augmented:
+            base_score = ins.get("relevance_score", 0.5)
+            emotional_score = ins.get("emotional_relevance", 0.5)
+            ins["combined_score"] = round((base_score * 0.7) + (emotional_score * 0.3) + boost, 4)
+        
+        augmented.sort(key=lambda x: x.get("combined_score", 0), reverse=True)
+        return augmented
+    
+    @staticmethod
+    def _compute_emotional_relevance(insight: Dict, emotional_context: Dict) -> float:
+        """Compute how emotionally relevant an insight is"""
+        score = 0.5
+        
+        category = insight.get("category", "").lower()
+        content = insight.get("insight", "").lower()
+        
+        if emotional_context["primary_emotion"] == "concerned":
+            if "bug" in category or "witnessed" in category:
+                score += 0.3
+            if "error" in content or "fix" in content:
+                score += 0.2
+        
+        elif emotional_context["primary_emotion"] == "curious":
+            if "performance" in category or "optimization" in category:
+                score += 0.3
+            if "faster" in content or "algorithm" in content:
+                score += 0.2
+        
+        elif emotional_context["primary_emotion"] == "satisfied":
+            if "success" in content or "passed" in content:
+                score += 0.2
+        
+        if emotional_context.get("empathy_needed"):
+            if "witnessed" in category:
+                score += 0.2
+            if len(content) > 100:
+                score += 0.1
+        
+        return min(1.0, score)
+    
+    @classmethod
+    def generate_empathetic_context_header(cls, emotional_context: Dict) -> str:
+        """Generate context header with emotional intelligence"""
+        lines = ["## Understanding Your Need"]
+        
+        emotion = emotional_context["primary_emotion"]
+        approach = emotional_context["approach_style"]
+        
+        emotion_guidance = {
+            "concerned": "I understand something isn't working. Let me help you fix it.",
+            "cautious": "Let me carefully analyze this with attention to detail.",
+            "optimistic": "Great, let's build on what's working.",
+            "curious": "Let's explore this together and discover the best approach.",
+            "satisfied": "Excellent work! Let me capture what we've learned.",
+            "focused": "I'm concentrating on giving you the most relevant insights.",
+            "empathetic": "I hear you. Let me provide the most helpful guidance I can.",
+            "neutral": "Let me draw on everything I've learned to help you.",
+        }
+        
+        lines.append(f"- Approach: {approach}")
+        lines.append(f"- Guidance: {emotion_guidance.get(emotion, 'Ready to help.')}")
+        
+        if emotional_context.get("user_signals"):
+            signals = emotional_context["user_signals"]
+            lines.append(f"- Detected: {', '.join(signals)}")
+            if "frustrated" in signals:
+                lines.append("- Note: I'll be thorough and precise to get this right.")
+            elif "confused" in signals:
+                lines.append("- Note: I'll explain clearly and build understanding.")
+            elif "urgent" in signals:
+                lines.append("- Note: Prioritizing the most critical insights first.")
+            elif "learning" in signals:
+                lines.append("- Note: I'll share foundational knowledge to help you grow.")
+        
+        return "\n".join(lines)
+
+
 class KnowledgeConcatenator:
     """Concatenates knowledge for context injection"""
     
@@ -218,8 +596,10 @@ class KnowledgeConcatenator:
             cat = ins.get("category", "general")
             content = ins.get("insight", "")
             ts = ins.get("timestamp", "")[:10]
+            score = ins.get("relevance_score", "")
             
-            parts.append(f"{i}. [{cat}] {content} ({ts})")
+            score_str = f" [relevance: {score}]" if score else ""
+            parts.append(f"{i}. [{cat}]{score_str} {content} ({ts})")
         
         if len(insights) > max_items:
             parts.append(f"... and {len(insights) - max_items} more")
@@ -416,10 +796,13 @@ class FluidKnowledgeGraph:
     # ============================================================
     
     def process(self, user_prompt: str) -> Dict:
-        """Full processing pipeline: classify -> contextualize -> retrieve -> format"""
+        """Full processing pipeline with sentient awareness: classify -> empathize -> contextualize -> retrieve -> format"""
         
         # 1. Classify the incoming query
         classification = self.classifier.classify(user_prompt)
+        
+        # 1.5. Detect emotional context (sentient awareness)
+        emotional_context = SentientRetrievalAugmentor.detect_emotional_context(user_prompt)
         
         # 2. Get related episodes for context
         related_episodes = self._get_related_episodes(user_prompt)
@@ -427,17 +810,23 @@ class FluidKnowledgeGraph:
         # 3. Extract context
         context = self.contextualizer.extract_context(user_prompt, related_episodes)
         
-        # 4. Retrieve relevant insights
-        relevant_insights = self._retrieve_insights(classification, context)
+        # 4. Retrieve relevant insights with semantic matching
+        relevant_insights = self._retrieve_insights(classification, context, user_prompt)
         
-        # 5. Amalgamate (deduplicate)
-        consolidated_insights = self.amalgamator.merge_similar_insights(relevant_insights)
+        # 5. Augment with emotional intelligence
+        augmented_insights = SentientRetrievalAugmentor.augment_retrieval(relevant_insights, emotional_context)
         
-        # 6. Format for injection
+        # 6. Amalgamate (deduplicate)
+        consolidated_insights = self.amalgamator.merge_similar_insights(augmented_insights)
+        
+        # 7. Format for injection with sentient header
         concatenated = KnowledgeConcatenator.concatenate_insights(consolidated_insights)
+        empathetic_header = SentientRetrievalAugmentor.generate_empathetic_context_header(emotional_context)
         contextual_header = KnowledgeConcatenator.create_contextual_header(context)
         
-        # 7. Split if too large
+        combined_header = f"{empathetic_header}\n\n{contextual_header}"
+        
+        # 8. Split if too large
         if self.splitter.estimate_tokens(concatenated) > 3000:
             chunks = self.splitter.split_by_tokens(concatenated)
             relevant_chunks = self.splitter.select_relevant_chunks(chunks, user_prompt)
@@ -445,9 +834,10 @@ class FluidKnowledgeGraph:
         
         return {
             "classification": classification,
+            "emotional_context": emotional_context,
             "context": context,
             "insights_count": len(consolidated_insights),
-            "context_header": contextual_header,
+            "context_header": combined_header,
             "knowledge_context": concatenated,
             "metadata": {
                 "total_insights_stored": self._count_insights(),
@@ -460,18 +850,46 @@ class FluidKnowledgeGraph:
     # ============================================================
     
     def _get_related_episodes(self, prompt: str) -> List[Dict]:
-        """Find related past episodes"""
+        """Find related past episodes using semantic matching"""
         try:
             with open(self.episodes_file, "r") as f:
                 episodes = [json.loads(line) for line in f if line.strip()]
         except:
             return []
         
-        # Simple relevance - last 5 episodes
-        return episodes[-5:]
+        if not episodes:
+            return []
+        
+        prompt_tokens = TFIDFRetriever.tokenize(prompt)
+        if not prompt_tokens:
+            return episodes[-5:]
+        
+        scored_episodes = []
+        all_episode_texts = []
+        for ep in episodes:
+            task_text = ep.get("task", "")
+            result_text = ep.get("result", "")
+            combined = f"{task_text} {result_text}"
+            all_episode_texts.append(TFIDFRetriever.tokenize(combined))
+        
+        idf = TFIDFRetriever.compute_idf(all_episode_texts + [prompt_tokens])
+        prompt_vector = TFIDFRetriever.compute_tfidf_vector(prompt_tokens, idf)
+        
+        for i, ep in enumerate(episodes):
+            doc_vector = TFIDFRetriever.compute_tfidf_vector(all_episode_texts[i], idf)
+            tfidf_sim = TFIDFRetriever.cosine_similarity(prompt_vector, doc_vector)
+            
+            keyword_score = MultiFactorScorer.keyword_overlap(prompt_tokens, all_episode_texts[i])
+            recency_score = MultiFactorScorer.recency_score(ep.get("timestamp", ""))
+            
+            combined_score = (tfidf_sim * 0.5) + (keyword_score * 0.3) + (recency_score * 0.2)
+            scored_episodes.append((combined_score, ep))
+        
+        scored_episodes.sort(key=lambda x: x[0], reverse=True)
+        return [ep for _, ep in scored_episodes[:5]]
     
-    def _retrieve_insights(self, classification: Dict, context: Dict) -> List[Dict]:
-        """Retrieve relevant insights based on classification and context"""
+    def _retrieve_insights(self, classification: Dict, context: Dict, query: str = "") -> List[Dict]:
+        """Retrieve relevant insights using TF-IDF semantic similarity and multi-factor scoring"""
         
         try:
             with open(self.insights_file, "r") as f:
@@ -479,14 +897,44 @@ class FluidKnowledgeGraph:
         except:
             return []
         
-        relevant = []
-        target_categories = list(classification.get("all_categories", {}).keys())
+        if not all_insights:
+            return []
         
-        for ins in all_insights[-50:]:  # Recent 50
-            if ins.get("category") in target_categories:
-                relevant.append(ins)
+        if not query:
+            query = f"{classification.get('primary_category', '')} {' '.join(classification.get('contexts', []))}"
         
-        return relevant[:10]  # Limit to 10
+        query_tokens = TFIDFRetriever.tokenize(query)
+        if not query_tokens:
+            return all_insights[-10:]
+        
+        all_doc_tokens = []
+        for ins in all_insights:
+            content = ins.get("insight", "")
+            category = ins.get("category", "")
+            combined = f"{content} {category}"
+            all_doc_tokens.append(TFIDFRetriever.tokenize(combined))
+        
+        idf = TFIDFRetriever.compute_idf(all_doc_tokens + [query_tokens])
+        query_vector = TFIDFRetriever.compute_tfidf_vector(query_tokens, idf)
+        
+        scored_results = []
+        for i, ins in enumerate(all_insights):
+            doc_vector = TFIDFRetriever.compute_tfidf_vector(all_doc_tokens[i], idf)
+            tfidf_sim = TFIDFRetriever.cosine_similarity(query_vector, doc_vector)
+            
+            relevance = MultiFactorScorer.compute_relevance(
+                query, ins, classification, tfidf_sim, idf
+            )
+            scored_results.append(relevance)
+        
+        scored_results.sort(key=lambda x: x["score"], reverse=True)
+        
+        top_results = scored_results[:10]
+        
+        for result in top_results:
+            result["insight"]["relevance_score"] = result["score"]
+        
+        return [r["insight"] for r in top_results]
     
     def _count_insights(self) -> int:
         try:
