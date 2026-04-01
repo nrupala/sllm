@@ -116,9 +116,33 @@ print(result['output'])
 | Flag | Description |
 |------|-------------|
 | `--test` | Run test query and exit |
+| `--verbose` or `-v` | Show thinking process (verbose mode) |
 | `--prefer=lmstudio` | Use LM Studio backend |
 | `--prefer=ollama` | Use Ollama backend |
 | `--prefer=mock` | No LLM (testing only) |
+
+## 🌐 Verbose Mode
+
+When verbose mode is enabled, SL-LLM displays its "thinking" process to the user:
+
+```bash
+python run.py --verbose
+# Or
+python run.py -v
+```
+
+Output shows:
+- **RECEIVING TASK** - What the user asked
+- **ITERATION** - Current processing iteration
+- **CALLING LLM** - When model is being queried
+- **TOOL CALL** - Which tools are being used
+- **TOOL RESULT** - Tool execution output
+- **REFINING** - LLM processing tool results
+- **GENERATING RESPONSE** - Final output generation
+
+Toggle during interactive mode with:
+- `verbose on` - Enable thinking display
+- `verbose off` - Disable thinking display
 
 ## 🛡️ Safety Features
 
@@ -145,6 +169,70 @@ sllm/
 ├── HELP.md         # Full documentation
 └── README.md       # This file
 ```
+
+## 🧠 Knowledge Graph & Persistent Learning
+
+SL-LLM maintains a **Knowledge Graph** that persists learned insights across sessions. This is inspired by research on memory systems in autonomous agents.
+
+### How It Works
+
+1. **Memory Store** (`memory/` directory)
+   - `episodes.jsonl` - Records every task execution with actions, results, and metrics
+   - `insights.jsonl` - Stores learned insights categorized by type (bug_fix, performance, etc.)
+
+2. **Knowledge Graph Structure**
+   ```json
+   {
+     "knowledge_graph": {
+       "version": "1.0",
+       "entities": [
+         {"type": "learned_insight", "content": "...", "category": "bug_fix"},
+         {"type": "task_episode", "task": "...", "result": "..."}
+       ],
+       "relationships": []
+     }
+   }
+   ```
+
+3. **Retention Mechanism**
+   - Each task execution is logged with full context
+   - After self-reflection, key learnings are extracted as insights
+   - Insights are categorized and timestamped for retrieval
+   - Future tasks can reference past learnings
+
+### Example: Retained Learning
+
+After learning to fix division-by-zero bug:
+```
+Category: bug_fix
+Insight: "Always check for division by zero before performing division"
+Timestamp: 2026-03-31T17:56:39
+```
+
+### References
+
+- **Gödel Agent** (arXiv:2410.04444) - Self-referential agent framework for recursive self-improvement [1]
+- **Meta-Prompting** - Language models using their own outputs as prompts for improvement [2]
+- **Retrieval-Augmented Generation (RAG)** - Memory retrieval for context [3]
+
+[1] https://arxiv.org/abs/2410.04444
+[2] https://arxiv.org/abs/2405.18392
+[3] https://arxiv.org/abs/2005.11401
+
+### Viewing the Knowledge Graph
+
+```bash
+# View insights
+cat memory/insights.jsonl
+
+# View episodes  
+cat memory/episodes.jsonl
+
+# Generate full knowledge graph
+python knowledge_graph.py
+```
+
+---
 
 ## 🤝 Contributing
 

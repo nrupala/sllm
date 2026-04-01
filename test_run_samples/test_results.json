@@ -1,0 +1,133 @@
+{
+  "total_tests": 21,
+  "passed": 20,
+  "failed": 1,
+  "tests": [
+    {
+      "timestamp": "2026-03-31T17:49:56.373650",
+      "test": "Tool: file_read",
+      "passed": true,
+      "details": "Read 3409 chars"
+    },
+    {
+      "timestamp": "2026-03-31T17:49:56.374661",
+      "test": "Tool: file_write",
+      "passed": true,
+      "details": "Written to D:/sl/projects/sllm/test_run_samples/te"
+    },
+    {
+      "timestamp": "2026-03-31T17:49:56.375713",
+      "test": "Tool: list_directory",
+      "passed": true,
+      "details": "Found 22 items"
+    },
+    {
+      "timestamp": "2026-03-31T17:49:56.477989",
+      "test": "Tool: execute_code",
+      "passed": true,
+      "details": "hello from sandbox\n"
+    },
+    {
+      "timestamp": "2026-03-31T17:49:56.683065",
+      "test": "Tool: get_system_info",
+      "passed": true,
+      "details": "{\"platform\": \"Windows-11-10.0.26200-SP0\", \"python\""
+    },
+    {
+      "timestamp": "2026-03-31T17:49:57.769025",
+      "test": "Self-reflection on output",
+      "passed": true,
+      "details": "Analysis length: 176 chars"
+    },
+    {
+      "timestamp": "2026-03-31T17:49:58.270122",
+      "test": "Can suggest improvements",
+      "passed": true,
+      "details": "Suggestion: def fibonacci(n):\n    if n <= 0: return 0\n    elif n == 1: r"
+    },
+    {
+      "timestamp": "2026-03-31T17:49:58.364353",
+      "test": "Create checkpoint",
+      "passed": true,
+      "details": "Checkpoint: test_checkpoint"
+    },
+    {
+      "timestamp": "2026-03-31T17:49:58.364554",
+      "test": "Dry-run modification",
+      "passed": false,
+      "details": "{'success': False, 'error': 'Path not allowed for modificati"
+    },
+    {
+      "timestamp": "2026-03-31T17:49:58.401693",
+      "test": "Restore checkpoint",
+      "passed": true,
+      "details": "Restored successfully"
+    },
+    {
+      "timestamp": "2026-03-31T17:49:58.409831",
+      "test": "Save/retrieve episodes",
+      "passed": true,
+      "details": "Retrieved 1 episodes"
+    },
+    {
+      "timestamp": "2026-03-31T17:49:58.410003",
+      "test": "Memory files persist",
+      "passed": true,
+      "details": "Files: True, True"
+    },
+    {
+      "timestamp": "2026-03-31T17:49:58.437324",
+      "test": "Create snapshot",
+      "passed": true,
+      "details": "Snapshot: test_snap"
+    },
+    {
+      "timestamp": "2026-03-31T17:49:58.437703",
+      "test": "List snapshots",
+      "passed": true,
+      "details": "Found 2 snapshots"
+    },
+    {
+      "timestamp": "2026-03-31T17:49:58.468264",
+      "test": "Restore snapshot",
+      "passed": true,
+      "details": "Restored from snapshot"
+    },
+    {
+      "timestamp": "2026-03-31T17:49:58.471311",
+      "test": "Add custom benchmark",
+      "passed": true,
+      "details": "Benchmarks: 1"
+    },
+    {
+      "timestamp": "2026-03-31T17:49:58.599558",
+      "test": "GPU detection",
+      "passed": true,
+      "details": "Type: nvidia, Info: GPU 0: NVIDIA GeForce RTX 3080 Laptop GP"
+    },
+    {
+      "timestamp": "2026-03-31T17:49:59.099841",
+      "test": "Agent task execution",
+      "passed": true,
+      "details": "Output length: 135"
+    },
+    {
+      "timestamp": "2026-03-31T17:49:59.099878",
+      "test": "Generated valid code",
+      "passed": true,
+      "details": "Contains function definition"
+    },
+    {
+      "timestamp": "2026-03-31T17:49:59.600842",
+      "test": "Reflection generates analysis",
+      "passed": true,
+      "details": "Keys: ['analysis', 'should_modify', 'improvement_plan']"
+    },
+    {
+      "timestamp": "2026-03-31T17:49:59.600895",
+      "test": "Can trigger modification",
+      "passed": true,
+      "details": "Should modify: False"
+    }
+  ]
+}

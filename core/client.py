@@ -46,35 +46,73 @@ class MockClient(BaseLLMClient):
     
     def _generate(self, prompt):
         p = prompt.lower()
+        
+        # Code generation tasks - return BUGGY code when asked for code with bug
+        if "deliberate bug" in p or "include a bug" in p or "with a bug" in p:
+            # Return code WITHOUT zero check
+            return '''def divide(a, b):
+    return a / b'''
+        
+        # Error analysis - self-reflection
+        if "analyze what went wrong" in p or "analyze the error" in p:
+            return '''SELF-REFLECTION ANALYSIS:
+
+1. ERROR IDENTIFIED: The code does not check for division by zero
+   - When b = 0, Python raises ZeroDivisionError
+   
+2. ROOT CAUSE: Missing input validation
+   - No conditional check before performing division
+   - The function assumes b will never be zero
+   
+3. FIX REQUIRED: Add zero-check before division
+   - Add: if b == 0: handle appropriately
+   - Options: return error message, raise custom exception, or return None'''
+
+        # Code fix - return correct code
+        if "fix" in p and "analysis" in p:
+            return '''def divide(a, b):
+    if b == 0:
+        return "Error: Division by zero is not allowed"
+    return a / b'''
+
+        # Normal code generation
+        if "divide" in p and "division" in p:
+            return '''def divide(a, b):
+    return a / b'''
+        
         if "fibonacci" in p:
             return '''def fibonacci(n):
     if n <= 0: return 0
     elif n == 1: return 1
-    return fibonacci(n-1) + fibonacci(n-2)
-
-# Test
-for i in range(10):
-    print(f"F({i}) = {fibonacci(i)}")'''
-        if "reverse" in p and "string" in p:
-            return 'def reverse_string(s): return s[::-1]\nprint(reverse_string("hello"))'
+    return fibonacci(n-1) + fibonacci(n-2)'''
+        
         if "prime" in p:
             return '''def is_prime(n):
     if n < 2: return False
     for i in range(2, int(n**0.5) + 1):
         if n % i == 0: return False
     return True'''
-        if "sort" in p:
-            return '''def quicksort(arr):
-    if len(arr) <= 1: return arr
-    pivot = arr[len(arr) // 2]
-    return quicksort([x for x in arr if x < pivot]) + [x for x in arr if x == pivot] + quicksort([x for x in arr if x > pivot])'''
-        if "tool" in p:
-            return "I'll use the available tools to help you."
-        return '''# Solution
-def solution():
+        
+        if "reverse" in p and "string" in p:
+            return 'def reverse_string(s): return s[::-1]'
+        
+        if "bug" in p or "fix" in p:
+            return '''def divide(a, b):
+    if b == 0:
+        return "Error: Cannot divide by zero"
+    return a / b'''
+        
+        if "analysis" in p:
+            return '''The code has no error handling for division by zero.
+This causes a ZeroDivisionError when b equals 0.
+To fix: Add a check if b == 0 and return an appropriate message.'''
+        
+        # Default code response
+        return '''def solution():
+    # Implementation here
     pass
 
-# Add your implementation here''' 
+# This demonstrates the requested functionality''' 
     
     def chat(self, messages, tools=None, **kwargs):
         import time

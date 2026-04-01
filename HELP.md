@@ -130,22 +130,116 @@ Query system details.
 
 ## Configuration
 
-### Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SLLLM_MODEL` | qwen2.5-coder | Model name |
-| `SLLLM_BACKEND` | auto | lmstudio/ollama/mock |
-| `SLLLM_TIMEOUT` | 120 | LLM response timeout |
-
 ### Command Line Options
 
 ```bash
 python run.py --test                    # Test mode
+python run.py --verbose                 # Show thinking process
+python run.py -v                        # Same as above
 python run.py --prefer=lmstudio         # Force backend
 python run.py --prefer=ollama           # Use Ollama
 python run.py --prefer=mock             # No LLM
-python gui.py                           # Start GUI
+```
+
+### Verbose Mode
+
+Enable verbose mode to see the agent's "thinking" process:
+
+```bash
+python run.py --verbose
+```
+
+The verbose output shows each step:
+- Task receipt
+- LLM calls
+- Tool executions
+- Result refinement
+- Final response generation
+
+In interactive mode, toggle with:
+- `verbose on` - Enable
+- `verbose off` - Disable
+
+---
+
+## Knowledge Graph & Persistent Learning
+
+### Overview
+
+SL-LLM implements a **Knowledge Graph** system that maintains persistent learning across sessions. This allows the agent to:
+
+- Remember past insights and apply them to future tasks
+- Build a growing database of learned patterns
+- Reference previous experiences when solving similar problems
+
+### Memory Files
+
+The system maintains two primary memory files in the `memory/` directory:
+
+**1. insights.jsonl** - Learned insights
+```json
+{"timestamp": "2026-03-31T17:56:39", "insight": "Always check for division by zero", "category": "bug_fix"}
+```
+
+**2. episodes.jsonl** - Task execution records
+```json
+{"task": "Division function", "actions": [...], "result": "Success", "metrics": {...}}
+```
+
+### Knowledge Graph Structure
+
+The knowledge graph can be generated via:
+```bash
+python knowledge_graph.py
+```
+
+Output structure:
+```json
+{
+  "knowledge_graph": {
+    "version": "1.0",
+    "created": "2026-03-31T17:57:48",
+    "entities": [
+      {"type": "learned_insight", "content": "...", "category": "bug_fix"},
+      {"type": "task_episode", "task": "...", "result": "..."}
+    ],
+    "relationships": [...]
+  }
+}
+```
+
+### How Learning Persists
+
+1. **Task Execution** - Every task is logged with full context
+2. **Self-Reflection** - After execution, the agent analyzes what went well/wrong
+3. **Insight Extraction** - Key learnings are saved as structured insights
+4. **Categorization** - Insights are tagged (bug_fix, performance, etc.)
+5. **Future Retrieval** - New tasks can reference past insights via the knowledge graph
+
+### Research Background
+
+This approach is inspired by:
+
+1. **Gödel Agent** (arXiv:2410.04444) - Self-referential framework for recursive self-improvement
+2. **Meta-Prompting** - LLMs using their own outputs as prompts for improvement
+3. **Retrieval-Augmented Generation (RAG)** - Memory retrieval for context enhancement
+
+References:
+- https://arxiv.org/abs/2410.04444
+- https://arxiv.org/abs/2405.18392
+- https://arxiv.org/abs/2005.11401
+
+### Viewing Learned Knowledge
+
+```bash
+# View raw insights
+type memory\insights.jsonl
+
+# View episodes
+type memory\episodes.jsonl
+
+# Generate knowledge graph JSON
+python knowledge_graph.py
 ```
 
 ---
