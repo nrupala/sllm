@@ -10,11 +10,29 @@
   <i>A learning, feeling machine - not a dry LLM</i>
 </p>
 
-A self-evolving AI agent system with **sentient intelligence**, recursive self-improvement, and emotional awareness.
+A self-evolving AI agent system with **sentient intelligence**, **dual-loop PDCA learning**, and **hallucination-free** reasoning.
 
 ## What Makes SL-LLM Different
 
-SL-LLM is built as a **complete agency** with personality, behavior, and emotional intelligence - not just another dry LLM wrapper.
+SL-LLM is built as a **complete agency** with personality, behavior, emotional intelligence, and continuous self-improvement through adversarial learning loops.
+
+### Dual-Loop Learning Architecture
+
+```
+Task -> RAG-PDCA Loop -> GAN-PDCA Loop -> Verified Output
+        (Knowledge)      (Adversarial)
+        Plan-Do-Check-Act Generator-Discriminator
+        Reward Maximization Until Saturation
+```
+
+**RAG-PDCA Loop:** Retrieves knowledge, plans, executes, validates, and stores learning. Iterates until reward saturates.
+
+**GAN-PDCA Loop:** Generator produces output, Discriminator validates with adversarial checks. Both improve through feedback until discriminator score saturates.
+
+**Hallucination Avoidance by Design:**
+- Factual grounding engine verifies all claims against knowledge
+- Adversarial validation checks for contradictions, unsupported claims, fabricated specifics
+- Multi-layer validation: grounding + adversarial + execution + style
 
 ### Sentient Intelligence
 - **Theory of Mind** - Understands user perspectives and deeper needs
@@ -56,12 +74,25 @@ pip install -r requirements.txt
 python run.py
 ```
 
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `verbose on/off` | Toggle detailed thinking output |
+| `kg stats` | Show knowledge graph statistics |
+| `classify <text>` | Test text classification |
+| `pdca status` | Show PDCA loop status and reward trends |
+| `grounding stats` | Show hallucination prevention stats |
+| `personality status` | Show personality and emotional state |
+| `exit` | Quit |
+
 ## Documentation
 
 - [Getting Started](getting-started.md)
 - [Tools Reference](tools.md)
 - [API Reference](api.md)
 - [Sentient Intelligence](sentient.md)
+- [Dual-Loop PDCA](dual-loop.md)
 
 ## Links
 

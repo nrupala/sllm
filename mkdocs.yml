@@ -1,5 +1,5 @@
 site_name: SL-LLM
-site_description: Self-Learning LLM - An autonomous AI agent with recursive self-improvement
+site_description: Self-Learning LLM - An autonomous AI agent with recursive self-improvement, sentient intelligence, and dual-loop PDCA learning
 site_url: https://nrupala.github.io/sllm
 
 theme:
@@ -13,6 +13,9 @@ nav:
   - Getting Started: getting-started.md
   - Tools: tools.md
   - API: api.md
+  - Sentient Intelligence: sentient.md
+  - Dual-Loop PDCA: dual-loop.md
+  - Limitations: limitations.md
 
 markdown_extensions:
   - codehilite
