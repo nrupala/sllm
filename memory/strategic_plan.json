@@ -1,0 +1,62 @@
+{
+  "goals": {
+    "fb96b5c4": {
+      "id": "fb96b5c4",
+      "name": "Test Goal",
+      "description": "A test strategic goal",
+      "priority": 0.9,
+      "status": "active",
+      "created": "2026-04-01T01:23:43.650550",
+      "deadline": null,
+      "subgoals": [
+        "13a66c0d"
+      ],
+      "progress": 0.5,
+      "lessons_learned": [
+        "Made good progress"
+      ]
+    },
+    "13a66c0d": {
+      "id": "13a66c0d",
+      "name": "Complete testing",
+      "description": "Subgoal of Test Goal",
+      "priority": 0.7200000000000001,
+      "status": "active",
+      "created": "2026-04-01T01:23:43.652729",
+      "deadline": null,
+      "subgoals": [],
+      "progress": 0.0,
+      "lessons_learned": []
+    },
+    "8629f42c": {
+      "id": "8629f42c",
+      "name": "Test Goal",
+      "description": "A test strategic goal",
+      "priority": 0.9,
+      "status": "active",
+      "created": "2026-04-01T01:24:29.383017",
+      "deadline": null,
+      "subgoals": [
+        "acc1d851"
+      ],
+      "progress": 0.5,
+      "lessons_learned": [
+        "Made good progress"
+      ]
+    },
+    "acc1d851": {
+      "id": "acc1d851",
+      "name": "Complete testing",
+      "description": "Subgoal of Test Goal",
+      "priority": 0.7200000000000001,
+      "status": "active",
+      "created": "2026-04-01T01:24:29.384978",
+      "deadline": null,
+      "subgoals": [],
+      "progress": 0.0,
+      "lessons_learned": []
+    }
+  },
+  "plan_history": [],
+  "saved_at": "2026-04-01T01:24:29.384996"
+}
