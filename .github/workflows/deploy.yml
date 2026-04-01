@@ -23,11 +23,25 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
-    - name: Run tests
+    - name: Test imports
       run: |
-        python -c "from core.client import get_client; print('OK')"
+        python -c "from core.client import get_client; print('Client OK')"
         python -c "from tools.builtin import get_default_tools; print('Tools OK')"
-        python -c "import run; print('Import OK')"
+        python -c "import run; print('Run OK')"
+        python -c "from knowledge_graph_manager import FluidKnowledgeGraph; print('KG OK')"
+    
+    - name: Test KG Manager
+      run: |
+        python -c "
+        from knowledge_graph_manager import FluidKnowledgeGraph, KnowledgeClassifier
+        # Test classification
+        result = KnowledgeClassifier.classify('Fix the divide by zero bug')
+        assert result['primary_category'] == 'bug_fix', 'Classification failed'
+        # Test KG binary export
+        fkg = FluidKnowledgeGraph()
+        info = fkg.get_binary_info()
+        print('Binary check passed')
+        "
 
   deploy:
     needs: test

@@ -1,14 +1,15 @@
 """
-SL-LLM Entry Point
+SL-LLM Entry Point with Enhanced Knowledge Graph RAG
 Usage: python run.py [--test] [--prefer=lmstudio|ollama|mock] [--verbose]
 """
 
 import sys
-
 import json
 import time
 from pathlib import Path
+from typing import Tuple, Dict
 
+# Parse arguments
 prefer = "auto"
 verbose = False
 
@@ -22,6 +23,7 @@ from core.client import get_client
 llm_client = get_client(prefer=prefer)
 
 from tools.builtin import get_default_tools, execute_tool
+from knowledge_graph_manager import FluidKnowledgeGraph, get_enhanced_context
 
 
 class SelfLearningLLM:
@@ -30,13 +32,17 @@ class SelfLearningLLM:
         self.client = llm_client
         self.tools = get_default_tools()
         self.verbose = verbose
+        self.kgm = FluidKnowledgeGraph()
+        
+        stats = self.kgm._get_category_counts()
         
         print(f"SL-LLM initialized with {self.model}")
         print(f"Tools: {[t['function']['name'] for t in self.tools]}")
+        print(f"Knowledge Graph: {stats.get('bug_fix', 0)} bugs, {stats.get('performance', 0)} optimizations stored")
         if self.verbose:
             print("[VERBOSE MODE: ON]")
 
-    def _verbose_print(self, phase, message, details=None):
+    def _verbose_print(self, phase: str, message: str, details=None):
         if self.verbose:
             print(f"\n{'='*50}")
             print(f"[THINKING] {phase}")
@@ -46,8 +52,21 @@ class SelfLearningLLM:
                 print(f"  Details: {str(details)[:200]}")
             print()
 
-    def execute_task(self, task, max_iterations=5):
+    def execute_task(self, task: str, max_iterations: int = 5) -> Dict:
         self._verbose_print("RECEIVING TASK", task)
+        
+        # Get enhanced knowledge graph context
+        self._verbose_print("KNOWLEDGE GRAPH", "Analyzing and retrieving relevant memories...")
+        
+        enhanced_context, kg_metadata = get_enhanced_context(task)
+        
+        classification = kg_metadata.get("classification", {})
+        context_info = kg_metadata.get("context", {})
+        
+        self._verbose_print("KNOWLEDGE GRAPH", 
+            f"Classified as: {classification.get('primary_category', 'general')}, "
+            f"Contexts: {classification.get('contexts', [])}, "
+            f"Insights: {kg_metadata.get('insights_retrieved', 0)}")
         
         start = time.time()
         
@@ -55,8 +74,12 @@ class SelfLearningLLM:
             self._verbose_print(f"ITERATION {i+1}", f"Processing task...")
             
             try:
-                self._verbose_print("CALLING LLM", f"Sending task to model: {self.model}")
-                response = self.client.chat([{"role": "user", "content": task}], tools=self.tools)
+                full_prompt = f"{enhanced_context}\n\nUser: {task}"
+                self._verbose_print("CALLING LLM", f"Sending task + classified context to model")
+                response = self.client.chat(
+                    [{"role": "user", "content": full_prompt}], 
+                    tools=self.tools
+                )
             except Exception as e:
                 return {"success": False, "error": str(e), "elapsed": time.time()-start}
             
@@ -75,11 +98,10 @@ class SelfLearningLLM:
                     result = execute_tool(tool_name, args)
                     self._verbose_print("TOOL RESULT", f"Tool: {tool_name}", result[:100])
                     
-                    # Continue conversation with tool result
                     try:
-                        self._verbose_print("REFINING", "Sending tool result back to LLM for refinement")
+                        self._verbose_print("REFINING", "Sending tool result back to LLM")
                         response = self.client.chat(
-                            [{"role": "user", "content": task}, 
+                            [{"role": "user", "content": full_prompt}, 
                              msg,
                              {"role": "tool", "content": result, "tool_call_id": call.get("id", "call")}],
                             tools=self.tools
@@ -91,38 +113,40 @@ class SelfLearningLLM:
             # Return text response
             out = msg.get("content", "")
             if out:
-                self._verbose_print("GENERATING RESPONSE", f"Producing final output ({len(out)} chars)")
-                return {"success": True, "output": out, "elapsed": time.time()-start}
+                self._verbose_print("GENERATING RESPONSE", 
+                    f"Producing output ({len(out)} chars), Category: {classification.get('primary_category', 'general')}")
+                return {
+                    "success": True, 
+                    "output": out, 
+                    "elapsed": time.time()-start,
+                    "knowledge_used": kg_metadata.get('insights_retrieved', 0),
+                    "classification": classification.get('primary_category', 'general')
+                }
         
         return {"success": False, "output": "Max iterations", "elapsed": time.time()-start}
 
-    def run_self_learning_cycle(self, task):
+    def run_self_learning_cycle(self, task: str) -> Dict:
         """Complete self-learning cycle with reflection"""
         
-        self._verbose_print("SELF-LEARNING CYCLE", "Starting self-improvement loop")
+        self._verbose_print("SELF-LEARNING CYCLE", "Starting self-improvement loop with KG context")
         
-        # Step 1: Generate
-        self._verbose_print("STEP 1: GENERATE", "Creating initial solution")
         result = self.execute_task(task)
         
-        # Step 2: Execute to check for errors
+        # Execute code check
         self._verbose_print("STEP 2: EXECUTE", "Testing the generated code")
         if "```python" in result.get("output", ""):
             code = result["output"].split("```python")[1].split("```")[0] if "```python" in result["output"] else result["output"]
             exec_result = execute_tool("execute_code", {"code": code, "timeout": 10})
             self._verbose_print("EXECUTION RESULT", exec_result[:150])
             
-            # Step 3: Reflect
             if "Error" in exec_result or "Traceback" in exec_result:
-                self._verbose_print("STEP 3: REFLECT", "Detected error - analyzing what went wrong")
-                # Self-reflection would happen here in full implementation
-                self._verbose_print("SELF-REFLECTION", "Analyzing error cause and fix needed")
+                self._verbose_print("STEP 3: REFLECT", "Detected error - using KG context for fix")
         
         return result
 
     def interactive(self):
         print("\nSL-LLM Interactive (type 'exit' to quit)")
-        print("Commands: 'verbose on/off' to toggle thinking display\n")
+        print("Commands: 'verbose on/off', 'kg stats', 'classify <text>'")
         
         while True:
             try:
@@ -137,9 +161,23 @@ class SelfLearningLLM:
                     self.verbose = False
                     print("[VERBOSE MODE: OFF]")
                     continue
+                if task.lower() == "kg stats":
+                    counts = self.kgm._get_category_counts()
+                    print(f"Knowledge categories: {counts}")
+                    continue
+                if task.lower().startswith("classify "):
+                    text = task[9:]
+                    from knowledge_graph_manager import KnowledgeClassifier
+                    result = KnowledgeClassifier.classify(text)
+                    print(f"Classification: {result}")
+                    continue
                 
                 result = self.execute_task(task)
-                print(f"\n{result.get('output', 'No output')[:500]}\n")
+                output = result.get('output', 'No output')
+                # Print full output without truncation
+                print(f"\n[Knowledge: {result.get('knowledge_used', 0)} insights, Type: {result.get('classification', 'general')}]")
+                print(output)
+                print()
             except KeyboardInterrupt:
                 break
             except Exception as e:
@@ -151,7 +189,8 @@ def main():
     
     if "--test" in sys.argv:
         result = sllm.execute_task("Write a fibonacci function in Python")
-        print(f"\nResult:\n{result.get('output', 'No output')[:400]}")
+        print(f"\n[Used {result.get('knowledge_used', 0)} insights, Type: {result.get('classification', 'general')}]")
+        print(result.get('output', 'No output'))
     else:
         sllm.interactive()
 

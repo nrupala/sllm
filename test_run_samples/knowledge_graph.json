@@ -1,7 +1,7 @@
 {
   "knowledge_graph": {
     "version": "1.0",
-    "created": "2026-03-31T17:57:48.121399",
+    "created": "2026-03-31T19:09:58.402289",
     "entities": [
       {
         "id": "insight_0",
@@ -60,7 +60,28 @@
         "timestamp": "2026-03-31T17:56:39.322624"
       },
       {
-        "id": "episode_8",
+        "id": "insight_8",
+        "type": "learned_insight",
+        "content": "Always check for division by zero before performing division",
+        "category": "bug_fix",
+        "timestamp": "2026-03-31T18:08:51.415222"
+      },
+      {
+        "id": "insight_9",
+        "type": "learned_insight",
+        "content": "Always check for division by zero before performing division",
+        "category": "bug_fix",
+        "timestamp": "2026-03-31T18:12:36.218958"
+      },
+      {
+        "id": "insight_10",
+        "type": "learned_insight",
+        "content": "Always check for division by zero before performing division",
+        "category": "bug_fix",
+        "timestamp": "2026-03-31T19:09:27.635098"
+      },
+      {
+        "id": "episode_11",
         "type": "task_episode",
         "task": "Test task",
         "result": "Success",
@@ -71,7 +92,7 @@
         }
       },
       {
-        "id": "episode_9",
+        "id": "episode_12",
         "type": "task_episode",
         "task": "Test task",
         "result": "Success",
@@ -82,7 +103,7 @@
         }
       },
       {
-        "id": "episode_10",
+        "id": "episode_13",
         "type": "task_episode",
         "task": "Test task",
         "result": "Success",
@@ -93,7 +114,7 @@
         }
       },
       {
-        "id": "episode_11",
+        "id": "episode_14",
         "type": "task_episode",
         "task": "Test task",
         "result": "Success",
@@ -104,7 +125,7 @@
         }
       },
       {
-        "id": "episode_12",
+        "id": "episode_15",
         "type": "task_episode",
         "task": "Division function with zero-check",
         "result": "Success",
@@ -117,7 +138,7 @@
         }
       },
       {
-        "id": "episode_13",
+        "id": "episode_16",
         "type": "task_episode",
         "task": "Division function with zero-check",
         "result": "Partial",
@@ -130,7 +151,7 @@
         }
       },
       {
-        "id": "episode_14",
+        "id": "episode_17",
         "type": "task_episode",
         "task": "Division function with zero-check",
         "result": "Success",
@@ -143,11 +164,50 @@
         }
       },
       {
-        "id": "episode_15",
+        "id": "episode_18",
         "type": "task_episode",
         "task": "Division function with zero-check",
         "result": "Success",
         "timestamp": "2026-03-31T17:56:39.322237",
+        "metrics": {
+          "error_detected": false,
+          "reflection_quality": 454,
+          "fix_applied": true,
+          "verification_passed": true
+        }
+      },
+      {
+        "id": "episode_19",
+        "type": "task_episode",
+        "task": "Division function with zero-check",
+        "result": "Success",
+        "timestamp": "2026-03-31T18:08:51.414806",
+        "metrics": {
+          "error_detected": false,
+          "reflection_quality": 454,
+          "fix_applied": true,
+          "verification_passed": true
+        }
+      },
+      {
+        "id": "episode_20",
+        "type": "task_episode",
+        "task": "Division function with zero-check",
+        "result": "Success",
+        "timestamp": "2026-03-31T18:12:36.218478",
+        "metrics": {
+          "error_detected": false,
+          "reflection_quality": 454,
+          "fix_applied": true,
+          "verification_passed": true
+        }
+      },
+      {
+        "id": "episode_21",
+        "type": "task_episode",
+        "task": "Division function with zero-check",
+        "result": "Success",
+        "timestamp": "2026-03-31T19:09:27.633892",
         "metrics": {
           "error_detected": false,
           "reflection_quality": 454,

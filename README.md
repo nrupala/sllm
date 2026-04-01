@@ -4,6 +4,11 @@
   <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
   <img src="https://img.shields.io/badge/Python-3.8+-blue.svg" alt="Python">
   <img src="https://img.shields.io/badge/AI-Self%20Improving-orange" alt="AI">
+  <a href="https://github.com/sponsors/nrupala"><img src="https://img.shields.io/badge/Sponsor-nrupala-orange?logo=github" alt="GitHub Sponsor"></a>
+</p>
+
+<p align="center">
+  <i>Proudly Built in Canada 🇨🇦</i>
 </p>
 
 A self-evolving AI agent system that can recursively improve its own code through reflection and modification. Built on top of local LLMs (Qwen2.5-coder, CodeLlama, etc.) via LM Studio or Ollama.

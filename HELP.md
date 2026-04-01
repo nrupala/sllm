@@ -246,12 +246,60 @@ python knowledge_graph.py
 
 ## Troubleshooting
 
-### "No output from LLM"
-- Check LM Studio is running and model loaded
-- Or ensure Ollama is serving: `ollama serve`
-- Verify port 1234 (LM Studio) or 11434 (Ollama) is accessible
+### "No output from LLM" or "Iterating but no response"
 
-### "GPU not detected"
+If the model appears to be iterating without producing any output, this usually means the LLM server is not properly running or no model is loaded. Follow these steps to diagnose and fix:
+
+**Step 1: Check if LM Studio is running**
+- Open LM Studio application
+- Ensure it is not minimized or closed
+
+**Step 2: Verify a model is loaded**
+- In LM Studio, look for the model indicator in the bottom left
+- If it says "No model loaded" or shows nothing, you need to:
+  1. Search for a model (e.g., "qwen2.5-coder" or "codellama")
+  2. Click "Download" to get the model files
+  3. Click "Load" to load the model into memory
+
+**Step 3: Start the server**
+- In LM Studio, look for the "Start Server" button (usually in the right panel)
+- Click it to start the local API server
+- The server should start on port 1234 by default
+
+**Step 4: Verify server is accessible**
+- Open a browser and go to: http://localhost:1234/v1/models
+- You should see a JSON response listing available models
+
+**Step 5: If still not working, use fallback**
+If LM Studio continues to fail, use the mock backend for testing:
+```bash
+python run.py --test --prefer=mock
+```
+
+### For Ollama Users
+
+If you prefer Ollama instead of LM Studio:
+
+1. **Ensure Ollama is running:**
+   ```bash
+   ollama serve
+   ```
+
+2. **Pull the model (if not already downloaded):**
+   ```bash
+   ollama pull qwen2.5-coder
+   ```
+
+3. **Verify Ollama is running:**
+   - Go to: http://localhost:11434/api/tags
+   - You should see your available models
+
+4. **Use Ollama backend:**
+   ```bash
+   python run.py --test --prefer=ollama
+   ```
+
+### GPU not detected
 - System automatically falls back to CPU
 - Install GPU drivers for your NVIDIA/AMD card
 

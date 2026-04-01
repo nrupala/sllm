@@ -130,24 +130,41 @@ class LMStudioClient(BaseLLMClient):
     def __init__(self, model="local-model", url="http://localhost:1234/v1"):
         self.model = model
         self.url = url
-        self.timeout = 120  # 2 min timeout for GPU
+        self.timeout = 300  # 5 min timeout for long outputs with GPU
     
     def _request(self, endpoint, data):
         try:
             import requests
+            # Add generation parameters for longer output
+            if "completions" in endpoint and "max_tokens" not in data:
+                data["max_tokens"] = 2048  # Allow longer responses
+            if "chat" in endpoint and "max_tokens" not in data:
+                data["max_tokens"] = 2048
+            
             resp = requests.post(f"{self.url}{endpoint}", json=data, timeout=self.timeout)
             return resp.json()
         except Exception as e:
             return {"error": str(e)}
     
     def chat(self, messages, tools=None, **kwargs):
-        payload = {"model": self.model, "messages": messages, **kwargs}
+        payload = {
+            "model": self.model, 
+            "messages": messages, 
+            "max_tokens": 16384,  # 4x increased for longer output
+            "temperature": 0.7,
+            "stream": False
+        }
         if tools:
             payload["tools"] = tools
+        # Add any additional kwargs
+        payload.update(kwargs)
+        
         result = self._request("/chat/completions", payload)
         if "error" in result:
             return {"message": {"content": f"Error: {result['error']}"}, "done": True}
-        return {"message": {"content": result.get("choices", [{}])[0].get("message", {}).get("content", "")}, "done": True}
+        
+        content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+        return {"message": {"content": content}, "done": True}
     
     def generate(self, prompt, **kwargs):
         payload = {"model": self.model, "prompt": prompt, **kwargs}
