@@ -1,0 +1,32 @@
+{
+  "instance_0": {
+    "id": "instance_0",
+    "registered_at": "2026-04-01T01:24:32.285575",
+    "last_heartbeat": "2026-04-01T01:24:32.289127",
+    "status": "active",
+    "metadata": {
+      "worker_id": 0
+    },
+    "tasks_processed": 0
+  },
+  "instance_1": {
+    "id": "instance_1",
+    "registered_at": "2026-04-01T01:24:32.286769",
+    "last_heartbeat": "2026-04-01T01:24:32.286778",
+    "status": "active",
+    "metadata": {
+      "worker_id": 1
+    },
+    "tasks_processed": 0
+  },
+  "instance_2": {
+    "id": "instance_2",
+    "registered_at": "2026-04-01T01:24:32.287885",
+    "last_heartbeat": "2026-04-01T01:24:32.287894",
+    "status": "active",
+    "metadata": {
+      "worker_id": 2
+    },
+    "tasks_processed": 0
+  }
+}

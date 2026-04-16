@@ -1,9 +1,11 @@
 # SL-LLM Help & Documentation
 
+---
+
 ## Table of Contents
-1. [Overview](#overview)
+1. [Quick Start](#quick-start)
 2. [How It Works](#how-it-works)
-3. [Architecture](#architecture)
+3. [Available Models](#available-models)
 4. [Tools Reference](#tools-reference)
 5. [Configuration](#configuration)
 6. [Troubleshooting](#troubleshooting)
@@ -11,351 +13,181 @@
 
 ---
 
-## Overview
+## Quick Start
 
-**SL-LLM** (Self-Learning LLM) is an autonomous AI agent that can:
-- Execute tasks using tools (file ops, code execution, search)
-- Reflect on its own outputs
-- Modify its own source code for self-improvement
-- Create checkpoints for safe rollback
+| Command | Description |
+|---------|-------------|
+| `python run_local.py` | Start local CLI runner |
+| `python gui_prod.py` | Start production GUI |
+| `python gui.py` | Start basic GUI |
+| `python daemon.py` | Start API server |
 
-It's inspired by research on recursive self-improvement (RSI) in AI systems.
+### Default Ports
+- **GUI:** http://localhost:8080
+- **LM Studio API:** http://localhost:1234
+- **Ollama API:** http://localhost:11434
+- **MCP Gateway:** http://localhost:5000/mcp
 
 ---
 
 ## How It Works
 
-### The Core Loop
-
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  1. TASK INPUT                                              │
-│     (user gives coding task)                                │
-└──────────────────────┬──────────────────────────────────────┘
-                       ▼
-┌─────────────────────────────────────────────────────────────┐
-│  2. TOOL EXECUTION                                          │
-│     (LLM uses: file_read, execute_code, etc.)              │
-└──────────────────────┬──────────────────────────────────────┘
-                       ▼
-┌─────────────────────────────────────────────────────────────┐
-│  3. RESPONSE GENERATION                                     │
-│     (LLM produces solution)                                 │
-└──────────────────────┬──────────────────────────────────────┘
-                       ▼
-┌─────────────────────────────────────────────────────────────┐
-│  4. SELF-EVALUATION (optional)                              │
-│     (ReflectiveAgent analyzes output)                      │
-│     → Can trigger self-modification                         │
-└──────────────────────┬──────────────────────────────────────┘
-                       ▼
-┌─────────────────────────────────────────────────────────────┐
-│  5. LEARNING                                                │
-│     (Save to memory/benchmark)                             │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│   Task Input │ -> │ Tool Execute │ -> │   Response   │
+└──────────────┘    └──────────────┘    └──────────────┘
+                           │
+                           v
+                    ┌──────────────┐
+                    │ Self-Reflect │
+                    └──────────────┘
+                           │
+                           v
+                    ┌──────────────┐
+                    │   Learning   │
+                    └──────────────┘
 ```
 
 ### Self-Modification Process
-
-1. Agent detects poor performance on task
-2. Creates checkpoint (snapshot of current code)
-3. Analyzes what needs improvement
-4. Generates modified code
-5. Tests modification
-6. If successful → keeps changes
-7. If failed → restores from checkpoint
+1. Agent detects poor performance → Creates checkpoint
+2. Analyzes what needs improvement → Generates modified code
+3. Tests modification → If successful keeps, else restores
 
 ---
 
-## Architecture
+## Available Models
 
-### Components
+### Local Models (No API Key)
+| Model | Provider | Description |
+|-------|----------|-------------|
+| qwen2.5-coder:14b | LM Studio | Code generation |
+| qwen3.5:9b | Ollama | General purpose |
+| llama3.1:8b | Ollama | General purpose |
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| LLM Client | `core/client.py` | Connects to LM Studio/Ollama |
-| Agent | `core/agent.py` | Task orchestration |
-| Self-Modifier | `core/self_modify.py` | Code modification logic |
-| Tools | `tools/builtin.py` | Available actions |
-| Evaluator | `eval/suite.py` | Benchmark runner |
-| Memory | `memory/` | Learning storage |
-
-### Backend Support
-
-- **LM Studio** (port 1234) - Recommended for GPU
-- **Ollama** (port 11434) - Alternative backend
-- **Mock** - Testing without LLM
+### Cloud Providers (Require API Key)
+- OpenAI (GPT-5, GPT-4o)
+- Anthropic (Claude 4)
+- Google (Gemini 2.5)
+- DeepSeek (R1, V3)
+- Qwen (Alibaba)
 
 ---
 
 ## Tools Reference
 
-### file_read
-Read contents of any file.
-```json
-{"path": "D:/sl/projects/sllm/run.py"}
-```
-
-### file_write
-Create or modify files.
-```json
-{"path": "D:/sl/test.py", "content": "print('hello')"}
-```
-
-### list_directory
-List folder contents.
-```json
-{"path": "D:/sl/projects/sllm"}
-```
-
-### execute_code
-Run Python code in sandbox.
-```json
-{"code": "print(1+1)", "timeout": 30}
-```
-
-### search_code
-Find patterns in code files.
-```json
-{"pattern": "def fibonacci", "path": "D:/sl/projects/sllm", "file_type": ".py"}
-```
-
-### get_system_info
-Query system details.
-```json
-{}
-```
+| Tool | Usage |
+|------|-------|
+| `file_read` | `{"path": "D:/sl/projects/sllm/run.py"}` |
+| `file_write` | `{"path": "D:/sl/test.py", "content": "print('hello')"}` |
+| `list_directory` | `{"path": "D:/sl/projects/sllm"}` |
+| `execute_code` | `{"code": "print(1+1)", "timeout": 30}` |
+| `search_code` | `{"pattern": "def fibonacci", "path": "D:/sl", "file_type": ".py"}` |
+| `get_system_info` | `{}` |
 
 ---
 
 ## Configuration
 
 ### Command Line Options
-
 ```bash
-python run.py --test                    # Test mode
-python run.py --verbose                 # Show thinking process
-python run.py -v                        # Same as above
-python run.py --prefer=lmstudio         # Force backend
-python run.py --prefer=ollama           # Use Ollama
-python run.py --prefer=mock             # No LLM
+python run_local.py --test              # Test mode
+python run_local.py --verbose            # Show thinking
+python run_local.py --prefer=lmstudio   # Force LM Studio
+python run_local.py --prefer=ollama       # Use Ollama
+python run_local.py --prefer=mock        # Mock backend
 ```
 
-### Verbose Mode
-
-Enable verbose mode to see the agent's "thinking" process:
-
-```bash
-python run.py --verbose
-```
-
-The verbose output shows each step:
-- Task receipt
-- LLM calls
-- Tool executions
-- Result refinement
-- Final response generation
-
-In interactive mode, toggle with:
-- `verbose on` - Enable
-- `verbose off` - Disable
-
----
-
-## Knowledge Graph & Persistent Learning
-
-### Overview
-
-SL-LLM implements a **Knowledge Graph** system that maintains persistent learning across sessions. This allows the agent to:
-
-- Remember past insights and apply them to future tasks
-- Build a growing database of learned patterns
-- Reference previous experiences when solving similar problems
-
-### Memory Files
-
-The system maintains two primary memory files in the `memory/` directory:
-
-**1. insights.jsonl** - Learned insights
-```json
-{"timestamp": "2026-03-31T17:56:39", "insight": "Always check for division by zero", "category": "bug_fix"}
-```
-
-**2. episodes.jsonl** - Task execution records
-```json
-{"task": "Division function", "actions": [...], "result": "Success", "metrics": {...}}
-```
-
-### Knowledge Graph Structure
-
-The knowledge graph can be generated via:
-```bash
-python knowledge_graph.py
-```
-
-Output structure:
-```json
-{
-  "knowledge_graph": {
-    "version": "1.0",
-    "created": "2026-03-31T17:57:48",
-    "entities": [
-      {"type": "learned_insight", "content": "...", "category": "bug_fix"},
-      {"type": "task_episode", "task": "...", "result": "..."}
-    ],
-    "relationships": [...]
-  }
-}
-```
-
-### How Learning Persists
-
-1. **Task Execution** - Every task is logged with full context
-2. **Self-Reflection** - After execution, the agent analyzes what went well/wrong
-3. **Insight Extraction** - Key learnings are saved as structured insights
-4. **Categorization** - Insights are tagged (bug_fix, performance, etc.)
-5. **Future Retrieval** - New tasks can reference past insights via the knowledge graph
-
-### Research Background
-
-This approach is inspired by:
-
-1. **Gödel Agent** (arXiv:2410.04444) - Self-referential framework for recursive self-improvement
-2. **Meta-Prompting** - LLMs using their own outputs as prompts for improvement
-3. **Retrieval-Augmented Generation (RAG)** - Memory retrieval for context enhancement
-
-References:
-- https://arxiv.org/abs/2410.04444
-- https://arxiv.org/abs/2405.18392
-- https://arxiv.org/abs/2005.11401
-
-### Viewing Learned Knowledge
-
-```bash
-# View raw insights
-type memory\insights.jsonl
-
-# View episodes
-type memory\episodes.jsonl
-
-# Generate knowledge graph JSON
-python knowledge_graph.py
-```
+### Environment Variables
+- `LMSTUDIO_URL` - LM Studio API URL
+- `OLLAMA_URL` - Ollama API URL
 
 ---
 
 ## Troubleshooting
 
-### "No output from LLM" or "Iterating but no response"
+### ❌ "No output from LLM"
 
-If the model appears to be iterating without producing any output, this usually means the LLM server is not properly running or no model is loaded. Follow these steps to diagnose and fix:
+**Fix:** Ensure LM Studio is running with a model loaded
+1. Open LM Studio → Download model → Load model → Start Server
+2. Verify: http://localhost:1234/v1/models
 
-**Step 1: Check if LM Studio is running**
-- Open LM Studio application
-- Ensure it is not minimized or closed
+### ❌ Ollama not working
 
-**Step 2: Verify a model is loaded**
-- In LM Studio, look for the model indicator in the bottom left
-- If it says "No model loaded" or shows nothing, you need to:
-  1. Search for a model (e.g., "qwen2.5-coder" or "codellama")
-  2. Click "Download" to get the model files
-  3. Click "Load" to load the model into memory
-
-**Step 3: Start the server**
-- In LM Studio, look for the "Start Server" button (usually in the right panel)
-- Click it to start the local API server
-- The server should start on port 1234 by default
-
-**Step 4: Verify server is accessible**
-- Open a browser and go to: http://localhost:1234/v1/models
-- You should see a JSON response listing available models
-
-**Step 5: If still not working, use fallback**
-If LM Studio continues to fail, use the mock backend for testing:
+**Fix:**
 ```bash
-python run.py --test --prefer=mock
+ollama serve
+ollama pull qwen2.5-coder
+python run_local.py --prefer=ollama
 ```
 
-### For Ollama Users
+### ❌ GPU not detected
+- Auto-fallback to CPU
+- Install NVIDIA drivers for GPU acceleration
 
-If you prefer Ollama instead of LM Studio:
-
-1. **Ensure Ollama is running:**
-   ```bash
-   ollama serve
-   ```
-
-2. **Pull the model (if not already downloaded):**
-   ```bash
-   ollama pull qwen2.5-coder
-   ```
-
-3. **Verify Ollama is running:**
-   - Go to: http://localhost:11434/api/tags
-   - You should see your available models
-
-4. **Use Ollama backend:**
-   ```bash
-   python run.py --test --prefer=ollama
-   ```
-
-### GPU not detected
-- System automatically falls back to CPU
-- Install GPU drivers for your NVIDIA/AMD card
-
-### "Model not found"
+### ❌ "Model not found"
 - Load model in LM Studio first
-- Or pull with Ollama: `ollama pull qwen2.5-coder`
-
-### "Permission denied"
-- Run terminal as Administrator
-- Check file permissions in project directory
-
-### "Import errors"
-```bash
-pip install -r requirements.txt
-```
+- Or: `ollama pull qwen2.5-coder`
 
 ---
 
 ## API Reference
 
 ### Python Usage
-
 ```python
-from run import SelfLearningLLM
+from run_local import run_task
 
-# Initialize
-sllm = SelfLearningLLM()
-
-# Execute task
-result = sllm.execute_task("Write fibonacci function")
-
-# Access output
+result = run_task("Write fibonacci function")
 print(result['output'])
 print(result['success'])
-print(result['elapsed'])
 ```
 
 ### Return Format
-
 ```python
 {
-    "success": True/False,
+    "success": True,
     "output": "...",
-    "elapsed": 1.23,  # seconds
-    "actions": [...]   # tool calls made
+    "elapsed": 1.23,
+    "actions": [...]
 }
+```
+
+### REST Endpoints
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/chat` | POST | Chat with LLM |
+| `/api/code` | POST | Generate code |
+| `/api/models` | GET | List models |
+| `/api/status` | GET | System status |
+| `/mcp/tools` | GET | MCP tools list |
+| `/mcp/execute` | POST | Execute MCP tool |
+
+---
+
+## Knowledge Graph
+
+SL-LLM maintains persistent learning via:
+- `memory/insights.jsonl` - Learned insights
+- `memory/episodes.jsonl` - Task records
+
+Generate knowledge graph:
+```bash
+python knowledge_graph.py
 ```
 
 ---
 
-## Contributing
+## Architecture
 
-See CONTRIBUTING.md for guidelines.
+| Component | File | Purpose |
+|-----------|------|---------|
+| LLM Client | `core/client.py` | Connect to LM Studio/Ollama |
+| Agent | `core/sl_llm_agent.py` | Task orchestration |
+| Tools | `tools/builtin.py` | Available actions |
+| Memory | `memory/` | Learning storage |
+| Zero-Check | `core/zero_check.py` | Division safety |
+| MCP Gateway | `mcp_gateway.py` | External tools |
 
 ---
 
-## License
-
-MIT License - see LICENSE file.
+*See CONTRIBUTING.md for contribution guidelines.*
+*MIT License - see LICENSE file.*
