@@ -1,0 +1,33 @@
+{
+  "models": [
+    {
+      "path": "D:\\models\\lmstudio-community\\gemma-3-4b-it-GGUF\\gemma-3-4b-it-Q4_K_M.gguf",
+      "name": "gemma-3-4b-it-Q4_K_M",
+      "size_gb": 2.32,
+      "size_mb": 2374,
+      "portable": true
+    },
+    {
+      "path": "D:\\models\\lmstudio-community\\LFM2.5-1.2B-Instruct-GGUF\\LFM2.5-1.2B-Instruct-Q8_0.gguf",
+      "name": "LFM2.5-1.2B-Instruct-Q8_0",
+      "size_gb": 1.16,
+      "size_mb": 1189,
+      "portable": true
+    },
+    {
+      "path": "D:\\models\\lmstudio-community\\gemma-4-26B-A4B-it-GGUF\\mmproj-gemma-4-26B-A4B-it-BF16.gguf",
+      "name": "mmproj-gemma-4-26B-A4B-it-BF16",
+      "size_gb": 1.11,
+      "size_mb": 1139,
+      "portable": true
+    },
+    {
+      "path": "D:\\models\\lmstudio-community\\gemma-3-4b-it-GGUF\\mmproj-model-f16.gguf",
+      "name": "mmproj-model-f16",
+      "size_gb": 0.79,
+      "size_mb": 812,
+      "portable": true
+    }
+  ],
+  "count": 4
+}
