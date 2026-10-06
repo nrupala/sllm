@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Nrupal Akolkar
+# SPDX-License-Identifier: MIT
+# See LICENSE for the full license text.
 """
 SL-LLM Self-Learning Demonstration
 Real-world test: Write code -> Execute -> Detect error -> Reflect -> Fix -> Verify

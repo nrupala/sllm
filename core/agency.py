@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Nrupal Akolkar
+# SPDX-License-Identifier: MIT
+# See LICENSE for the full license text.
 """
 SL-LLM Agency System
 - Autonomous decision making with reasoning trace

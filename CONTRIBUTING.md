@@ -68,3 +68,13 @@ Open an issue with:
 ---
 
 Thank you for contributing!
+---
+
+## Portfolio certification: PR-flow discipline
+
+- Direct pushes to `main` are retired. All changes land via **draft pull request**.
+- Draft PR → tests green → owner (Nrupal Akolkar) merges. No one else merges.
+- Every PR adds a CHANGELOG entry under `## [Unreleased]` (Keep a Changelog)
+  and bumps the version per SemVer: **patch** = fix/chore, **minor** = feature,
+  **major** = breaking change.
+- Merge commits reference the PR number; releases are tagged `vX.Y.Z` after merge.

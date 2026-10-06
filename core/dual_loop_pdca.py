@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Nrupal Akolkar
+# SPDX-License-Identifier: MIT
+# See LICENSE for the full license text.
 """
 SL-LLM Dual-Loop Learning System: RAG-PDCA + GAN-PDCA
 - RAG-PDCA: Knowledge-grounded iterative improvement loop

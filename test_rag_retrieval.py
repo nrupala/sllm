@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Nrupal Akolkar
+# SPDX-License-Identifier: MIT
+# See LICENSE for the full license text.
 """
 Enhanced RAG Retrieval Test Suite
 Proves the dynamic intelligence of the SL-LLM Knowledge Graph

@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Nrupal Akolkar
+# SPDX-License-Identifier: MIT
+# See LICENSE for the full license text.
 """
 SL-LLM Client with GPU optimization
 Supports: LM Studio, Ollama, Mock
