@@ -6,12 +6,11 @@ SL-LLM Agentification System
 """
 
 import uuid
-import json
-from datetime import datetime
-from typing import List, Dict, Optional, Callable
-from dataclasses import dataclass, field
-from enum import Enum
 from collections import defaultdict
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from enum import Enum
 
 
 class AgentRole(Enum):
@@ -29,20 +28,20 @@ class Agent:
     id: str
     name: str
     role: AgentRole
-    capabilities: List[str]
-    memory: List[Dict] = field(default_factory=list)
-    state: Dict = field(default_factory=dict)
+    capabilities: list[str]
+    memory: list[dict] = field(default_factory=list)
+    state: dict = field(default_factory=dict)
     
     def can_handle(self, task_type: str) -> bool:
         return task_type in self.capabilities
     
-    def remember(self, item: Dict):
+    def remember(self, item: dict):
         self.memory.append({
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "data": item
         })
     
-    def recall(self, limit: int = 10) -> List[Dict]:
+    def recall(self, limit: int = 10) -> list[dict]:
         return self.memory[-limit:]
 
 
@@ -52,18 +51,18 @@ class Message:
     sender_id: str
     receiver_id: str
     content: str
-    metadata: Dict = field(default_factory=dict)
-    timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
+    metadata: dict = field(default_factory=dict)
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 class AgentMessageBus:
     """Message passing system for inter-agent communication"""
     
     def __init__(self):
-        self.messages: List[Message] = []
-        self.subscribers: Dict[str, List[str]] = defaultdict(list)
+        self.messages: list[Message] = []
+        self.subscribers: dict[str, list[str]] = defaultdict(list)
     
-    def send(self, sender_id: str, receiver_id: str, content: str, metadata: Dict = None) -> Message:
+    def send(self, sender_id: str, receiver_id: str, content: str, metadata: dict | None = None) -> Message:
         msg = Message(
             id=str(uuid.uuid4()),
             sender_id=sender_id,
@@ -74,10 +73,10 @@ class AgentMessageBus:
         self.messages.append(msg)
         return msg
     
-    def broadcast(self, sender_id: str, content: str) -> List[Message]:
+    def broadcast(self, sender_id: str, content: str) -> list[Message]:
         return [self.send(sender_id, "all", content)]
     
-    def get_messages_for(self, agent_id: str) -> List[Message]:
+    def get_messages_for(self, agent_id: str) -> list[Message]:
         return [m for m in self.messages if m.receiver_id == agent_id or m.receiver_id == "all"]
     
     def subscribe(self, agent_id: str, channel: str):
@@ -90,11 +89,11 @@ class AgentTeam:
     def __init__(self, name: str):
         self.id = str(uuid.uuid4())
         self.name = name
-        self.agents: Dict[str, Agent] = {}
+        self.agents: dict[str, Agent] = {}
         self.message_bus = AgentMessageBus()
-        self.task_history: List[Dict] = []
+        self.task_history: list[dict] = []
     
-    def create_agent(self, name: str, role: AgentRole, capabilities: List[str]) -> Agent:
+    def create_agent(self, name: str, role: AgentRole, capabilities: list[str]) -> Agent:
         agent = Agent(
             id=str(uuid.uuid4()),
             name=name,
@@ -104,7 +103,7 @@ class AgentTeam:
         self.agents[agent.id] = agent
         return agent
     
-    def decompose_task(self, task: str) -> List[Dict]:
+    def decompose_task(self, task: str) -> list[dict]:
         """Break complex task into subtasks"""
         subtasks = []
         
@@ -166,26 +165,26 @@ class AgentTeam:
         
         return subtasks
     
-    def _get_agent_by_role(self, role: AgentRole) -> Optional[Agent]:
+    def _get_agent_by_role(self, role: AgentRole) -> Agent | None:
         for agent in self.agents.values():
             if agent.role == role:
                 return agent
         return None
     
-    def coordinate(self, task: str, execute_fn: Callable) -> Dict:
+    def coordinate(self, task: str, execute_fn: Callable) -> dict:
         """Coordinate multi-agent task execution"""
         subtasks = self.decompose_task(task)
         results = []
         
         for subtask in subtasks:
             agent_id = subtask.get("assigned_to")
-            agent = self.agents.get(agent_id)
+            agent = self.agents.get(str(agent_id)) if agent_id else None
             
             if agent:
                 # Send task to agent
                 self.message_bus.send(
                     "orchestrator",
-                    agent_id,
+                    str(agent_id),
                     subtask["description"],
                     {"subtask_type": subtask["type"]}
                 )
@@ -213,7 +212,7 @@ class AgentTeam:
         self.task_history.append(final_result)
         return final_result
     
-    def get_team_status(self) -> Dict:
+    def get_team_status(self) -> dict:
         return {
             "team_name": self.name,
             "agent_count": len(self.agents),

@@ -4,18 +4,17 @@ Tests self-learning and self-improvement capabilities
 """
 
 import json
-import time
+from datetime import datetime, timezone
 from pathlib import Path
-from datetime import datetime
 
-TEST_RESULTS = []
+TEST_RESULTS: list = []
 BASE_PATH = "D:/sl/projects/sllm/test_run_samples"
 Path(BASE_PATH).mkdir(parents=True, exist_ok=True)
 
 
 def log_test(name, passed, details=""):
     result = {
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "test": name,
         "passed": passed,
         "details": details
@@ -29,7 +28,7 @@ def test_1_basic_tool_execution():
     """Test 1: Can execute tasks using tools"""
     print("\n=== Test 1: Basic Tool Execution ===")
     
-    from tools.builtin import execute_tool, get_default_tools
+    from tools.builtin import execute_tool
     
     # Test file read
     result = execute_tool("file_read", {"path": "D:/sl/projects/sllm/run.py"})
@@ -103,12 +102,12 @@ def test_3_self_modification_engine():
     """Test 3: Self-modification capability"""
     print("\n=== Test 3: Self-Modification Engine ===")
     
-    from core.self_modify import SelfModifier, ImprovementAnalyzer
     from core.client import MockClient
+    from core.self_modify import ImprovementAnalyzer, SelfModifier
     
     client = MockClient()
     modifier = SelfModifier(client=client)
-    analyzer = ImprovementAnalyzer(client)
+    ImprovementAnalyzer(client)
     
     # Test checkpoint creation
     checkpoint = modifier.create_checkpoint("test_checkpoint")
@@ -116,7 +115,7 @@ def test_3_self_modification_engine():
     log_test("Create checkpoint", passed, f"Checkpoint: {checkpoint}")
     
     # Test modification history
-    history_before = len(modifier.get_modification_history())
+    len(modifier.get_modification_history())
     
     # Apply a modification (simulated) - use allowed path
     result = modifier.apply_modification(
@@ -196,7 +195,7 @@ def test_6_evaluation_benchmark():
     """Test 6: Evaluation and benchmarking"""
     print("\n=== Test 6: Evaluation Benchmark ===")
     
-    from eval.suite import BenchmarkSuite, Benchmark
+    from eval.suite import Benchmark, BenchmarkSuite
     
     suite = BenchmarkSuite()
     
@@ -221,7 +220,6 @@ def test_7_gpu_detection():
     from core.client import detect_gpu
     
     gpu_type, gpu_info = detect_gpu()
-    is_nvidia = gpu_type == "nvidia"
     
     log_test("GPU detection", True, f"Type: {gpu_type}, Info: {str(gpu_info)[:40]}")
     
@@ -234,7 +232,7 @@ def test_8_agent_integration():
     
     # Mock test since LM Studio not running
     from core.client import MockClient
-    from tools.builtin import get_default_tools, execute_tool
+    from tools.builtin import get_default_tools
     
     client = MockClient()
     tools = get_default_tools()
@@ -302,18 +300,18 @@ def save_results():
     md_path = f"{BASE_PATH}/test_report.md"
     with open(md_path, "w") as f:
         f.write("# SL-LLM Test Results\n\n")
-        f.write(f"**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-        f.write(f"## Summary\n\n")
+        f.write(f"**Date:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        f.write("## Summary\n\n")
         f.write(f"- Total Tests: {summary['total_tests']}\n")
         f.write(f"- Passed: {summary['passed']}\n")
         f.write(f"- Failed: {summary['failed']}\n\n")
-        f.write(f"## Test Details\n\n")
+        f.write("## Test Details\n\n")
         for t in TEST_RESULTS:
             status = "PASS" if t["passed"] else "FAIL"
             f.write(f"### {status} {t['test']}\n")
             f.write(f"**Details:** {t['details']}\n\n")
     
-    print(f"\nResults saved to:")
+    print("\nResults saved to:")
     print(f"   - {json_path}")
     print(f"   - {md_path}")
     

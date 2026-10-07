@@ -4,10 +4,9 @@ AutoCoder Integration Layer
 Connects UIS, SLM, and AxiomCode services.
 """
 
-import os
 import logging
-from typing import Dict, Optional, Any
 from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +23,7 @@ class ServiceRegistry:
     """Registry of all AutoCoder ecosystem services."""
     
     def __init__(self):
-        self.services: Dict[str, ServiceConfig] = {}
+        self.services: dict[str, ServiceConfig] = {}
         self._register_default_services()
     
     def _register_default_services(self):
@@ -52,16 +51,16 @@ class ServiceRegistry:
         self.services[name] = ServiceConfig(name=name, url=url, port=port)
         logger.info(f"Registered service: {name} at {url}")
     
-    def get(self, name: str) -> Optional[ServiceConfig]:
+    def get(self, name: str) -> ServiceConfig | None:
         """Get a service by name."""
         return self.services.get(name)
     
-    def get_url(self, name: str) -> Optional[str]:
+    def get_url(self, name: str) -> str | None:
         """Get service URL."""
         svc = self.services.get(name)
         return svc.url if svc else None
     
-    def list_services(self) -> Dict[str, ServiceConfig]:
+    def list_services(self) -> dict[str, ServiceConfig]:
         """List all registered services."""
         return self.services.copy()
     
@@ -74,7 +73,7 @@ class ServiceRegistry:
         try:
             resp = requests.get(f"{svc.url}/health", timeout=2)
             return resp.status_code == 200
-        except:
+        except Exception:  # noqa: BLE001
             return False
 
 
@@ -84,16 +83,16 @@ class CodeOrchestrator:
     def __init__(self):
         self.registry = ServiceRegistry()
     
-    def generate_code(self, prompt: str, verify: bool = False) -> Dict[str, Any]:
+    def generate_code(self, prompt: str, verify: bool = False) -> dict[str, Any]:
         """Generate and optionally verify code."""
-        result = {"prompt": prompt, "code": None, "verified": False, "errors": []}
+        result: dict[str, Any] = {"prompt": prompt, "code": None, "verified": False, "errors": []}
         
         # Use local engine first (fastest)
         from engine import generate
         try:
             result["code"] = generate(prompt)
             logger.info(f"Generated code for: {prompt[:50]}...")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             result["errors"].append(f"Generation failed: {e}")
         
         # Optionally verify with AxiomCode
@@ -114,11 +113,11 @@ registry = ServiceRegistry()
 orchestrator = CodeOrchestrator()
 
 
-def get_service(name: str) -> Optional[ServiceConfig]:
+def get_service(name: str) -> ServiceConfig | None:
     return registry.get(name)
 
-def list_all_services() -> Dict[str, ServiceConfig]:
+def list_all_services() -> dict[str, ServiceConfig]:
     return registry.list_services()
 
-def generate_code(prompt: str, verify: bool = False) -> Dict[str, Any]:
+def generate_code(prompt: str, verify: bool = False) -> dict[str, Any]:
     return orchestrator.generate_code(prompt, verify)

@@ -15,19 +15,17 @@ Usage:
 
 import argparse
 import json
-import os
 import platform
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Any
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.client import get_client, detect_gpu, GPU_INFO
-from tools.builtin import get_default_tools
+from core.client import GPU_INFO
 from knowledge_graph_manager import FluidKnowledgeGraph, get_enhanced_context
-
+from tools.builtin import get_default_tools
 
 # ============================================================================
 # Configuration
@@ -72,10 +70,10 @@ class LLMBackend:
         self.name = name
         
     def chat(self, messages, tools=None, **kwargs):
-        raise NotImplemented
+        raise NotImplementedError
     
     def generate(self, prompt, **kwargs):
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class LMStudioBackend(LLMBackend):
@@ -97,7 +95,7 @@ class LMStudioBackend(LLMBackend):
                 if models and self.model == "auto":
                     self.model = models[0]["id"]
                     print(f"Using model: {self.model}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"LM Studio not available: {e}")
             self.model = None
     
@@ -150,7 +148,7 @@ class OllamaBackend(LLMBackend):
                 if models and self.model == "auto":
                     self.model = models[0]["name"]
                     print(f"Using model: {self.model}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Ollama not available: {e}")
             self.model = None
     
@@ -210,16 +208,16 @@ class MockBackend(LLMBackend):
 class SL_LLM_Runner:
     """SL-LLM Local Runner"""
     
-    def __init__(self, prefer: str = "auto", model: Optional[str] = None):
+    def __init__(self, prefer: str = "auto", model: str | None = None):
         self.prefer = prefer
         self.model = model
         self.kgm = FluidKnowledgeGraph()
-        self.backend = None
+        self.backend: Any = None
         
     def initialize(self):
         """Initialize the best available backend"""
-print(f"\n{'='*50}")
-        print(f"SL-LLM Local Runner")
+        print(f"\n{'='*50}")
+        print("SL-LLM Local Runner")
         print(f"{'='*50}")
         print(f"Platform: {platform.system()}")
         print(f"GPU: {GPU_INFO[0]} - {GPU_INFO[1][:50] if GPU_INFO[1] else 'CPU'}")
@@ -244,9 +242,9 @@ print(f"\n{'='*50}")
                         break
                 elif backend_name == "mock":
                     self.backend = MockBackend(self.model)
-                    print(f"[OK] Using Mock backend")
+                    print("[OK] Using Mock backend")
                     break
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"[FAIL] {backend_name}: {e}")
         
         if not self.backend:
@@ -254,13 +252,13 @@ print(f"\n{'='*50}")
             self.backend = MockBackend(self.model)
         
         print(f"{'='*50}\n")
-        
+
     def run_task(self, task: str) -> str:
         """Execute a task with full SL-LLM pipeline"""
         print(f"Task: {task}\n")
         
         # Get knowledge graph context
-        enhanced_context, kg_metadata = get_enhanced_context(task)
+        enhanced_context, _kg_metadata = get_enhanced_context(task)
         
         # Build full prompt
         full_prompt = f"""{enhanced_context}
@@ -293,7 +291,7 @@ Respond with:
                     tool_name = call["function"]["name"]
                     try:
                         args = json.loads(call["function"]["arguments"])
-                    except:
+                    except Exception:  # noqa: BLE001
                         args = {"code": call["function"]["arguments"]}
                     
                     from tools.builtin import execute_tool
@@ -312,8 +310,8 @@ Respond with:
             
             return content
             
-        except Exception as e:
-            return f"Error: {str(e)}"
+        except Exception as e:  # noqa: BLE001
+            return f"Error: {e!s}"
     
     def interactive(self):
         """Interactive chat mode"""
@@ -356,7 +354,7 @@ Respond with:
             except KeyboardInterrupt:
                 print("\nGoodbye!")
                 break
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"Error: {e}\n")
 
 
@@ -389,7 +387,7 @@ def main():
                     print("\nAvailable models:")
                     for m in data.get("data", []):
                         print(f"  - {m['id']}")
-            except:
+            except Exception:  # noqa: BLE001
                 print("No models available")
         elif runner.backend.name == "ollama":
             import urllib.request
@@ -400,14 +398,14 @@ def main():
                     print("\nAvailable models:")
                     for m in data.get("models", []):
                         print(f"  - {m['name']} ({m.get('size', '?')})")
-            except:
+            except Exception:  # noqa: BLE001
                 print("No models available")
         return
     
     if args.task:
         result = runner.run_task(args.task)
         print(f"\n{'='*50}")
-        print(f"Result:")
+        print("Result:")
         print(f"{'='*50}")
         print(result)
     elif args.interactive:

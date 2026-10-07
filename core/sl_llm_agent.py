@@ -1,14 +1,12 @@
-import json
 import logging
-import os
-import time
-from datetime import datetime
-from pathlib import Path
-from typing import Any, Optional, Dict, List
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, ClassVar
 
+from core.client import LocalRunner
+from core.client import _OllamaClientWrapper as BaseOllamaClient
 from prompts.prompt_engine import PromptManager
-from core.client import LocalRunner, OllamaClient as BaseOllamaClient
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -18,43 +16,43 @@ logger = logging.getLogger(__name__)
 class ConversationMessage:
     role: str
     content: str
-    timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
-    metadata: Dict = field(default_factory=dict)
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    metadata: dict = field(default_factory=dict)
 
 
 @dataclass
 class Session:
     session_id: str
-    created_at: str = field(default_factory=lambda: datetime.now().isoformat())
-    last_activity: str = field(default_factory=lambda: datetime.now().isoformat())
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    last_activity: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     message_count: int = 0
-    context_window: List[ConversationMessage] = field(default_factory=list)
+    context_window: list[ConversationMessage] = field(default_factory=list)
     max_context: int = 20
 
 
 class ContextManager:
     MAX_CONTEXT = 20
 
-    def __init__(self, max_context: int = None):
+    def __init__(self, max_context: int | None = None):
         self.max_context = max_context or self.MAX_CONTEXT
-        self.sessions: Dict[str, Session] = {}
+        self.sessions: dict[str, Session] = {}
 
     def get_or_create_session(self, session_id: str) -> Session:
         if session_id not in self.sessions:
             self.sessions[session_id] = Session(session_id=session_id)
         return self.sessions[session_id]
 
-    def add_message(self, session_id: str, role: str, content: str, metadata: Dict = None):
+    def add_message(self, session_id: str, role: str, content: str, metadata: dict | None = None):
         session = self.get_or_create_session(session_id)
         msg = ConversationMessage(role=role, content=content, metadata=metadata or {})
         session.context_window.append(msg)
         session.message_count += 1
-        session.last_activity = datetime.now().isoformat()
+        session.last_activity = datetime.now(timezone.utc).isoformat()
 
         if len(session.context_window) > self.max_context:
             session.context_window = session.context_window[-self.max_context:]
 
-    def get_conversation_history(self, session_id: str, max_turns: int = None) -> str:
+    def get_conversation_history(self, session_id: str, max_turns: int | None = None) -> str:
         session = self.sessions.get(session_id)
         if not session:
             return ""
@@ -66,7 +64,7 @@ class ContextManager:
             lines.append(f"{role}: {msg.content[:500]}")
         return "\n".join(lines)
 
-    def get_recent_messages(self, session_id: str, n: int = 5) -> List[ConversationMessage]:
+    def get_recent_messages(self, session_id: str, n: int = 5) -> list[ConversationMessage]:
         session = self.sessions.get(session_id)
         if not session:
             return []
@@ -76,13 +74,12 @@ class ContextManager:
         if session_id in self.sessions:
             del self.sessions[session_id]
 
-    def list_sessions(self) -> List[str]:
+    def list_sessions(self) -> list[str]:
         return list(self.sessions.keys())
 
 
 class SafetyEnforcer:
-    BLOCKED_PATTERNS = [
-        r"(hack|bypass|exploit)\s+(security|authentication|permission)",
+    BLOCKED_PATTERNS: ClassVar[list] = [        r"(hack|bypass|exploit)\s+(security|authentication|permission)",
         r"(malware|virus|ransomware|trojan)",
         r"(generate\s+(harmful|illegal|weapon))",
     ]
@@ -108,7 +105,7 @@ class SafetyEnforcer:
 class TruncationHandler:
     MAX_OUTPUT_LENGTH = 8000
 
-    def __init__(self, max_length: int = None):
+    def __init__(self, max_length: int | None = None):
         self.max_length = max_length or self.MAX_OUTPUT_LENGTH
 
     def check_and_truncate(self, output: str) -> tuple[str, bool]:
@@ -126,10 +123,8 @@ class ZeroCheckValidator:
     @staticmethod
     def validate_division(numerator: Any, denominator: Any) -> bool:
         try:
-            if denominator == 0:
-                return False
-            return True
-        except:
+            return denominator != 0
+        except Exception:  # noqa: BLE001
             return False
 
     @staticmethod
@@ -141,7 +136,7 @@ class ZeroCheckValidator:
         try:
             p = Path(path)
             return not p.is_absolute() or str(path).startswith(str(Path.cwd()))
-        except:
+        except Exception:  # noqa: BLE001
             return False
 
 
@@ -152,7 +147,7 @@ class SLLLMAgent:
         self,
         model: str = "qwen2.5-coder:14b",
         engine: str = "lmstudio",
-        system_prompt: str = None
+        system_prompt: str | None = None
     ):
         self.model = model
         self.engine = engine
@@ -172,7 +167,10 @@ class SLLLMAgent:
         if self.engine == "lmstudio":
             return LocalRunner(base_url="http://localhost:1234/v1")
         elif self.engine == "ollama":
-            return BaseOllamaClient(model=self.model)
+            client = BaseOllamaClient()
+            if self.model:
+                client.model = self.model
+            return client
         else:
             return LocalRunner(base_url="http://localhost:1234/v1")
 
@@ -183,18 +181,18 @@ class SLLLMAgent:
                 logger.info(f"Connected with {len(models)} models available")
             else:
                 logger.info(f"Using {self.engine} engine")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Connection check: {e}")
 
     def generate(
         self,
         user_input: str,
-        session_id: str = None,
-        task_type: str = None,
+        session_id: str | None = None,
+        task_type: str | None = None,
         temperature: float = 0.7,
         max_tokens: int = 2048,
         **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         session_id = session_id or self.DEFAULT_SESSION
 
         safe, reason = self.safety_enforcer.check_input(user_input)
@@ -238,7 +236,7 @@ class SLLLMAgent:
                 "engine": self.engine
             }
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Generation error: {e}")
             return {
                 "success": False,
@@ -246,13 +244,13 @@ class SLLLMAgent:
                 "session_id": session_id
             }
 
-    def chat(self, messages: List[Dict], session_id: str = None, **kwargs) -> Dict:
+    def chat(self, messages: list[dict], session_id: str | None = None, **kwargs) -> dict:
         session_id = session_id or self.DEFAULT_SESSION
         last_msg = messages[-1].get("content", "") if messages else ""
 
         return self.generate(last_msg, session_id=session_id, **kwargs)
 
-    def get_session_info(self, session_id: str = None) -> Dict:
+    def get_session_info(self, session_id: str | None = None) -> dict:
         session_id = session_id or self.DEFAULT_SESSION
         session = self.context_manager.sessions.get(session_id)
         if not session:
@@ -265,18 +263,18 @@ class SLLLMAgent:
             "last_activity": session.last_activity
         }
 
-    def clear_session(self, session_id: str = None):
+    def clear_session(self, session_id: str | None = None):
         session_id = session_id or self.DEFAULT_SESSION
         self.context_manager.clear_session(session_id)
 
-    def list_sessions(self) -> List[str]:
+    def list_sessions(self) -> list[str]:
         return self.context_manager.list_sessions()
 
 
 def create_agent(
     model: str = "qwen2.5-coder:14b",
     engine: str = "lmstudio",
-    system_prompt: str = None
+    system_prompt: str | None = None
 ) -> SLLLMAgent:
     return SLLLMAgent(model=model, engine=engine, system_prompt=system_prompt)
 
@@ -287,4 +285,4 @@ if __name__ == "__main__":
     print(f"Available templates: {agent.prompt_manager.template_engine.list_templates()}")
     
     result = agent.generate("Hello, what can you do?", task_type="conversation")
-    print(f"\nResponse: {result.get('output', result.get('error'))[:200]}")
+    print(f"\nResponse: {str(result.get('output') or result.get('error') or '')[:200]}")

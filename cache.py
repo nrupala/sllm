@@ -1,12 +1,14 @@
-from functools import wraps
-from typing import Callable, Any
-import time
 import hashlib
 import json
+import time
+from collections.abc import Callable
+from functools import wraps
+from typing import Any
+
 
 class Cache:
     def __init__(self, max_size: int = 1000, ttl: int = 300):
-        self.cache = {}
+        self.cache: dict = {}
         self.max_size = max_size
         self.ttl = ttl
     

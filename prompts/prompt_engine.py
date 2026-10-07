@@ -1,21 +1,19 @@
-import os
-import re
-import json
 import logging
+import re
 from pathlib import Path
-from typing import Any, Optional, Dict
+from typing import Any
+
 import yaml
 
 logger = logging.getLogger(__name__)
 
 
 class PromptTemplateEngine:
-    def __init__(self, templates_dir: str = None):
+    def __init__(self, templates_dir: str | Path | None = None):
         if templates_dir is None:
-            base = Path(__file__).parent
-            templates_dir = base / "prompts" / "templates"
+            templates_dir = Path(__file__).parent / "prompts" / "templates"
         self.templates_dir = Path(templates_dir)
-        self.templates = {}
+        self.templates: dict = {}
         self._load_templates()
 
     def _load_templates(self):
@@ -33,12 +31,12 @@ class PromptTemplateEngine:
                         for item in data:
                             if isinstance(item, dict) and 'name' in item:
                                 self.templates[item['name']] = item
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Failed to load {yaml_file}: {e}")
 
         logger.info(f"Loaded {len(self.templates)} templates")
 
-    def render(self, template_name: str, variables: Dict[str, Any]) -> str:
+    def render(self, template_name: str, variables: dict[str, Any]) -> str:
         if template_name not in self.templates:
             logger.warning(f"Template '{template_name}' not found")
             return f"Template {template_name} not found"
@@ -56,7 +54,7 @@ class PromptTemplateEngine:
 
         return rendered
 
-    def _handle_conditionals(self, template: str, variables: Dict[str, Any]) -> str:
+    def _handle_conditionals(self, template: str, variables: dict[str, Any]) -> str:
         block_pattern = re.compile(r'\{\{#if\s+(\w+)\}\}(.*?)\{\{/if\}\}', re.DOTALL)
         
         while True:
@@ -79,7 +77,7 @@ class PromptTemplateEngine:
         cleaned = [line for line in lines if line.strip()]
         return '\n'.join(cleaned)
 
-    def get_template(self, name: str) -> Optional[Dict]:
+    def get_template(self, name: str) -> dict | None:
         return self.templates.get(name)
 
     def list_templates(self) -> list:
@@ -87,10 +85,9 @@ class PromptTemplateEngine:
 
 
 class PromptManager:
-    def __init__(self, prompts_dir: str = None):
+    def __init__(self, prompts_dir: str | Path | None = None):
         if prompts_dir is None:
-            base = Path(__file__).parent
-            prompts_dir = base / "prompts"
+            prompts_dir = Path(__file__).parent / "prompts"
         self.prompts_dir = Path(prompts_dir)
         self.system_prompt = self._load_system_prompt()
         self.template_engine = PromptTemplateEngine()
@@ -102,7 +99,7 @@ class PromptManager:
                 with open(system_file, 'r', encoding='utf-8') as f:
                     data = yaml.safe_load(f)
                     return data.get('instructions', '')
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Failed to load system prompt: {e}")
         
         return self._default_system_prompt()
@@ -122,7 +119,7 @@ When performing mathematical operations:
 - Validate file handles before operations
 
 If your response is truncated, tell the user:
-"Response truncated. Ask a follow-up to continue the thought.""""
+"Response truncated. Ask a follow-up to continue the thought."""
 
     def get_system_prompt(self) -> str:
         return self.system_prompt
@@ -130,7 +127,7 @@ If your response is truncated, tell the user:
     def render_task(self, task_type: str, **kwargs) -> str:
         return self.template_engine.render(task_type, kwargs)
 
-    def get_full_prompt(self, user_input: str, conversation_history: str = None, **kwargs) -> str:
+    def get_full_prompt(self, user_input: str, conversation_history: str | None = None, **kwargs) -> str:
         parts = [self.system_prompt]
         
         if conversation_history:

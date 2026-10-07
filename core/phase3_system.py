@@ -6,16 +6,12 @@ SL-LLM Phase 3: Security, Scalability, Formal Verification
 """
 
 import ast
-import re
 import json
-import hashlib
+import re
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Set, Tuple
-from dataclasses import dataclass, field
-from collections import defaultdict
-
+from typing import ClassVar
 
 # ============================================================
 # SECURITY HARDENING
@@ -24,8 +20,7 @@ from collections import defaultdict
 class InputSanitizer:
     """Sanitize and validate all inputs"""
     
-    DANGEROUS_PATTERNS = [
-        r"os\.system\s*\(",
+    DANGEROUS_PATTERNS: ClassVar[list] = [        r"os\.system\s*\(",
         r"subprocess\.(call|run|Popen)\s*\(",
         r"eval\s*\(",
         r"exec\s*\(",
@@ -47,7 +42,7 @@ class InputSanitizer:
     MAX_FILE_PATH_LENGTH = 500
     
     @classmethod
-    def sanitize_text(cls, text: str) -> Tuple[str, List[str]]:
+    def sanitize_text(cls, text: str) -> tuple[str, list[str]]:
         """Sanitize text input, return (cleaned_text, warnings)"""
         warnings = []
         
@@ -62,7 +57,7 @@ class InputSanitizer:
         return text, warnings
     
     @classmethod
-    def sanitize_file_path(cls, path: str) -> Tuple[str, List[str]]:
+    def sanitize_file_path(cls, path: str) -> tuple[str, list[str]]:
         """Sanitize file path, prevent path traversal"""
         warnings = []
         
@@ -81,7 +76,7 @@ class InputSanitizer:
         return path, warnings
     
     @classmethod
-    def sanitize_code(cls, code: str) -> Tuple[str, List[str]]:
+    def sanitize_code(cls, code: str) -> tuple[str, list[str]]:
         """Sanitize code for safe execution"""
         warnings = []
         
@@ -99,7 +94,7 @@ class RateLimiter:
     def __init__(self, max_requests: int = 100, window_seconds: float = 60.0):
         self.max_requests = max_requests
         self.window_seconds = window_seconds
-        self.requests: List[float] = []
+        self.requests: list[float] = []
     
     def allow_request(self) -> bool:
         """Check if request is allowed"""
@@ -115,7 +110,7 @@ class RateLimiter:
         self.requests.append(now)
         return True
     
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         now = time.time()
         cutoff = now - self.window_seconds
         active = len([t for t in self.requests if t > cutoff])
@@ -131,18 +126,18 @@ class SecurityAudit:
     """Security audit and monitoring"""
     
     def __init__(self):
-        self.audit_log: List[Dict] = []
-        self.violations: List[Dict] = []
+        self.audit_log: list[dict] = []
+        self.violations: list[dict] = []
         self.sanitizer = InputSanitizer()
         self.rate_limiter = RateLimiter()
     
-    def audit_input(self, input_type: str, content: str) -> Dict:
+    def audit_input(self, input_type: str, content: str) -> dict:
         """Audit an input for security issues"""
         if not self.rate_limiter.allow_request():
             self.violations.append({
                 "type": "rate_limit_exceeded",
                 "input_type": input_type,
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             })
             return {"allowed": False, "reason": "Rate limit exceeded"}
         
@@ -164,7 +159,7 @@ class SecurityAudit:
         self.audit_log.append({
             "type": input_type,
             "result": result,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         
         if warnings:
@@ -172,12 +167,12 @@ class SecurityAudit:
                 "type": "input_warning",
                 "input_type": input_type,
                 "warnings": warnings,
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             })
         
         return result
     
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         return {
             "total_audits": len(self.audit_log),
             "total_violations": len(self.violations),
@@ -196,15 +191,15 @@ class InstanceRegistry:
     
     def __init__(self, registry_file: str = "D:/sl/projects/sllm/memory/instance_registry.json"):
         self.registry_file = Path(registry_file)
-        self.instances: Dict[str, Dict] = {}
+        self.instances: dict[str, dict] = {}
         self._load()
     
-    def register(self, instance_id: str, metadata: Dict = None) -> str:
+    def register(self, instance_id: str, metadata: dict | None = None) -> str:
         """Register a new instance"""
         self.instances[instance_id] = {
             "id": instance_id,
-            "registered_at": datetime.now().isoformat(),
-            "last_heartbeat": datetime.now().isoformat(),
+            "registered_at": datetime.now(timezone.utc).isoformat(),
+            "last_heartbeat": datetime.now(timezone.utc).isoformat(),
             "status": "active",
             "metadata": metadata or {},
             "tasks_processed": 0,
@@ -215,7 +210,7 @@ class InstanceRegistry:
     def heartbeat(self, instance_id: str) -> bool:
         """Update instance heartbeat"""
         if instance_id in self.instances:
-            self.instances[instance_id]["last_heartbeat"] = datetime.now().isoformat()
+            self.instances[instance_id]["last_heartbeat"] = datetime.now(timezone.utc).isoformat()
             self.instances[instance_id]["status"] = "active"
             self._save()
             return True
@@ -227,15 +222,15 @@ class InstanceRegistry:
             self.instances[instance_id]["tasks_processed"] += 1
             self._save()
     
-    def get_active_instances(self) -> List[Dict]:
+    def get_active_instances(self) -> list[dict]:
         """Get all active instances"""
-        cutoff = (datetime.now() - timedelta(minutes=5)).isoformat()
+        cutoff = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
         return [
             inst for inst in self.instances.values()
             if inst["last_heartbeat"] > cutoff
         ]
     
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         active = self.get_active_instances()
         return {
             "total_instances": len(self.instances),
@@ -253,7 +248,7 @@ class InstanceRegistry:
             try:
                 with open(self.registry_file, "r") as f:
                     self.instances = json.load(f)
-            except:
+            except Exception:  # noqa: BLE001
                 self.instances = {}
 
 
@@ -264,20 +259,18 @@ class InstanceRegistry:
 class CodeVerifier:
     """Static analysis and formal verification for generated code"""
     
-    DANGEROUS_FUNCTIONS = {
-        "eval", "exec", "compile", "__import__", "globals", "locals",
+    DANGEROUS_FUNCTIONS: ClassVar[set] = {        "eval", "exec", "compile", "__import__", "globals", "locals",
         "open", "input", "breakpoint",
     }
     
-    DANGEROUS_MODULES = {
-        "os", "subprocess", "sys", "ctypes", "pickle", "marshal",
+    DANGEROUS_MODULES: ClassVar[set] = {        "os", "subprocess", "sys", "ctypes", "pickle", "marshal",
         "shelve", "socket", "http", "urllib",
     }
     
     def __init__(self):
-        self.verification_log: List[Dict] = []
+        self.verification_log: list[dict] = []
     
-    def verify(self, code: str) -> Dict:
+    def verify(self, code: str) -> dict:
         """Verify code safety and correctness"""
         issues = []
         warnings = []
@@ -310,17 +303,18 @@ class CodeVerifier:
                 for alias in node.names:
                     if alias.name in self.DANGEROUS_MODULES:
                         warnings.append(f"Dangerous module imported: {alias.name}")
-            elif isinstance(node, ast.ImportFrom):
-                if node.module and node.module.split(".")[0] in self.DANGEROUS_MODULES:
-                    warnings.append(f"Dangerous module imported: {node.module}")
-            
+            elif (
+                isinstance(node, ast.ImportFrom)
+                and node.module
+                and node.module.split(".")[0] in self.DANGEROUS_MODULES
+            ):
+                warnings.append(f"Dangerous module imported: {node.module}")
             # Check for infinite loops
-            if isinstance(node, ast.While):
-                if isinstance(node.test, ast.Constant) and node.test.value is True:
-                    # Check for break statement
-                    has_break = any(isinstance(n, ast.Break) for n in ast.walk(node))
-                    if not has_break:
-                        warnings.append(f"Potential infinite loop at line {node.lineno}")
+            if isinstance(node, ast.While) and isinstance(node.test, ast.Constant) and node.test.value is True:
+                # Check for break statement
+                has_break = any(isinstance(n, ast.Break) for n in ast.walk(node))
+                if not has_break:
+                    warnings.append(f"Potential infinite loop at line {node.lineno}")
             
             # Check for undefined variables (basic)
             if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
@@ -338,7 +332,7 @@ class CodeVerifier:
         }
         
         self.verification_log.append({
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "valid": passed,
             "issues_count": len(issues),
             "warnings_count": len(warnings),
@@ -346,7 +340,7 @@ class CodeVerifier:
         
         return result
     
-    def _calculate_metrics(self, tree: ast.AST) -> Dict:
+    def _calculate_metrics(self, tree: ast.AST) -> dict:
         """Calculate code metrics"""
         metrics = {
             "functions": 0,
@@ -369,7 +363,7 @@ class CodeVerifier:
         
         return metrics
     
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         return {
             "total_verifications": len(self.verification_log),
             "recent_verifications": self.verification_log[-5:],
@@ -388,19 +382,19 @@ class Phase3System:
         self.registry = InstanceRegistry()
         self.verifier = CodeVerifier()
     
-    def audit_input(self, input_type: str, content: str) -> Dict:
+    def audit_input(self, input_type: str, content: str) -> dict:
         """Audit input for security"""
         return self.security.audit_input(input_type, content)
     
-    def verify_code(self, code: str) -> Dict:
+    def verify_code(self, code: str) -> dict:
         """Verify code safety"""
         return self.verifier.verify(code)
     
-    def register_instance(self, instance_id: str, metadata: Dict = None) -> str:
+    def register_instance(self, instance_id: str, metadata: dict | None = None) -> str:
         """Register an instance"""
         return self.registry.register(instance_id, metadata)
     
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         return {
             "security": self.security.get_status(),
             "registry": self.registry.get_status(),

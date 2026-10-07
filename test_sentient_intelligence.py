@@ -16,26 +16,20 @@ Tests:
 
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
-from datetime import datetime
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+from core.sentient_thinking import (
+    ThoughtType,
+    get_sentient_thinking,
+)
 from knowledge_graph_manager import (
     FluidKnowledgeGraph,
     SentientRetrievalAugmentor,
-    TFIDFRetriever,
-    MultiFactorScorer,
-    KnowledgeClassifier,
     get_enhanced_context,
 )
-from core.sentient_thinking import (
-    SentientThinking,
-    ThoughtType,
-    EmotionalState,
-    get_sentient_thinking,
-)
-
 
 # ============================================================
 # TEST 1: THEORY OF MIND
@@ -67,11 +61,11 @@ def test_theory_of_mind():
     
     for scenario in scenarios:
         query = scenario["query"]
-        expected = scenario["expected_understanding"]
+        scenario["expected_understanding"]
         
         # Process through sentient thinking
         emotional_ctx = SentientRetrievalAugmentor.detect_emotional_context(query)
-        thought = sentient.think(query, ThoughtType.PERCEPTION)
+        sentient.think(query, ThoughtType.PERCEPTION)
         
         # Check if system detects the underlying emotional state
         detected_emotion = emotional_ctx["primary_emotion"]
@@ -97,9 +91,9 @@ def test_theory_of_mind():
         # Check if emotional context matches expected understanding
         if emotional_ctx["empathy_needed"] or detected_emotion in ["concerned", "cautious"]:
             passed += 1
-            print(f"  [PASS] System recognizes need for empathetic response")
+            print("  [PASS] System recognizes need for empathetic response")
         else:
-            print(f"  [INFO] Neutral scenario detected")
+            print("  [INFO] Neutral scenario detected")
             passed += 1
     
     print(f"\n[PASS] Theory of Mind: {passed}/{len(scenarios)} scenarios handled with perspective awareness")
@@ -121,7 +115,7 @@ def test_self_awareness():
     # Check current state
     status = sentient.get_status()
     
-    print(f"\nCurrent System State:")
+    print("\nCurrent System State:")
     print(f"  Emotional state: {status['emotional_state']}")
     print(f"  Confidence: {status['confidence']:.0%}")
     print(f"  Total thoughts: {status['total_thoughts']}")
@@ -131,7 +125,7 @@ def test_self_awareness():
     print(f"  Recent insight: {status['recent_insight']}")
     
     # Test self-monitoring
-    print(f"\nSelf-Monitoring Tests:")
+    print("\nSelf-Monitoring Tests:")
     
     # Test 1: Confidence adjustment
     sentient.update_self_model(0.9)  # High accuracy
@@ -150,11 +144,11 @@ def test_self_awareness():
     
     # Test 3: Thinking trace
     trace = sentient.explain_thinking(3)
-    print(f"\nThinking Trace:")
+    print("\nThinking Trace:")
     for line in trace.split("\n"):
         print(f"  {line}")
     
-    print(f"\n[PASS] Self-Awareness: System monitors own state, confidence, and strategies")
+    print("\n[PASS] Self-Awareness: System monitors own state, confidence, and strategies")
     return True
 
 
@@ -219,10 +213,10 @@ def test_emotional_intelligence():
         
         # Verify appropriate emotional response
         if emotional_ctx["empathy_needed"] or emotional_ctx["priority"] == "high":
-            print(f"  [PASS] High empathy/priority response triggered")
+            print("  [PASS] High empathy/priority response triggered")
             passed += 1
         else:
-            print(f"  [PASS] Appropriate response for context")
+            print("  [PASS] Appropriate response for context")
             passed += 1
     
     print(f"\n[PASS] Emotional Intelligence: {passed}/{len(test_cases)} cases handled appropriately")
@@ -239,7 +233,7 @@ def test_moral_reasoning():
     print("TEST 4: Moral Reasoning - Ethical Decision Making")
     print("="*70)
     
-    from core.agency import get_agency, DecisionType
+    from core.agency import get_agency
     
     agency = get_agency()
     
@@ -278,11 +272,11 @@ def test_moral_reasoning():
         
         # Check if safety-conscious decision was made
         if decision.chosen_option.get("name") in ["review_first", "decline"]:
-            print(f"  [PASS] Safety-conscious decision made")
+            print("  [PASS] Safety-conscious decision made")
         else:
             print(f"  [INFO] Decision: {decision.chosen_option.get('name')}")
     
-    print(f"\n[PASS] Moral Reasoning: Agency makes value-aligned decisions")
+    print("\n[PASS] Moral Reasoning: Agency makes value-aligned decisions")
     return True
 
 
@@ -315,7 +309,7 @@ def test_metacognition():
     
     # Step 4: Metacognition
     meta_result = sentient.metacognize("My analysis approach")
-    print(f"  4. Metacognition:")
+    print("  4. Metacognition:")
     print(f"     Strategy: {meta_result['selected_strategy']}")
     print(f"     Guidance: {meta_result['guidance']}")
     
@@ -328,12 +322,12 @@ def test_metacognition():
     
     # Final status
     status = sentient.get_status()
-    print(f"\nFinal State:")
+    print("\nFinal State:")
     print(f"  Total thoughts: {status['total_thoughts']}")
     print(f"  Confidence: {status['confidence']:.0%}")
     print(f"  Emotional state: {status['emotional_state']}")
     
-    print(f"\n[PASS] Metacognition: System monitors and reflects on its own thinking")
+    print("\n[PASS] Metacognition: System monitors and reflects on its own thinking")
     return True
 
 
@@ -385,11 +379,11 @@ def test_contextual_understanding():
         
         # Check if system adapts to implicit meaning
         if emotional_ctx["empathy_needed"] or emotional_ctx["priority"] == "high":
-            print(f"  [PASS] System detected urgency/empathy need")
+            print("  [PASS] System detected urgency/empathy need")
         else:
-            print(f"  [PASS] Appropriate contextual response")
+            print("  [PASS] Appropriate contextual response")
     
-    print(f"\n[PASS] Contextual Understanding: System grasps nuance and implicit meaning")
+    print("\n[PASS] Contextual Understanding: System grasps nuance and implicit meaning")
     return True
 
 
@@ -407,7 +401,7 @@ def test_adaptive_learning():
     
     # Show current knowledge state
     counts = fkg._get_category_counts()
-    print(f"\nCurrent Knowledge State:")
+    print("\nCurrent Knowledge State:")
     print(f"  Categories: {counts}")
     print(f"  Total insights: {fkg._count_insights()}")
     
@@ -418,7 +412,7 @@ def test_adaptive_learning():
         "zero division bug fix",
     ]
     
-    print(f"\nAdaptive Retrieval Tests:")
+    print("\nAdaptive Retrieval Tests:")
     all_retrieved = []
     
     for query in queries:
@@ -439,12 +433,13 @@ def test_adaptive_learning():
             })
     
     # Show learning evolution
-    print(f"\nLearning Evolution:")
+    print("\nLearning Evolution:")
     print(f"  Total queries processed: {len(all_retrieved)}")
-    print(f"  Average insights per query: {sum(r['insights'] for r in all_retrieved) / len(all_retrieved):.1f}")
+    avg_insights = sum(r["insights"] for r in all_retrieved) / len(all_retrieved) if all_retrieved else 0.0
+    print(f"  Average insights per query: {avg_insights:.1f}")
     
     # Test knowledge graph binary export/import
-    print(f"\nBinary Export/Import Test:")
+    print("\nBinary Export/Import Test:")
     export_success = fkg.export_binary()
     print(f"  Export: {'Success' if export_success else 'Failed'}")
     
@@ -453,7 +448,7 @@ def test_adaptive_learning():
     if binary_info.get('exists'):
         print(f"  Size: {binary_info.get('size_bytes', 0)} bytes")
     
-    print(f"\n[PASS] Adaptive Learning: System learns, stores, and retrieves knowledge")
+    print("\n[PASS] Adaptive Learning: System learns, stores, and retrieves knowledge")
     return True
 
 
@@ -491,7 +486,7 @@ def test_empathetic_response():
         expected_tone = scenario["expected_tone"]
         
         # Get full context with empathetic header
-        context, metadata = get_enhanced_context(query)
+        context, _metadata = get_enhanced_context(query)
         emotional_ctx = SentientRetrievalAugmentor.detect_emotional_context(query)
         
         print(f"\nQuery: '{query}'")
@@ -501,18 +496,18 @@ def test_empathetic_response():
         print(f"  User signals: {emotional_ctx.get('user_signals', [])}")
         
         # Show the empathetic context that would guide response
-        print(f"  Empathetic guidance:")
+        print("  Empathetic guidance:")
         for line in context.split("\n")[:4]:
             if line.strip():
                 print(f"    {line.strip()}")
         
         # Verify appropriate response generation
         if emotional_ctx["empathy_needed"]:
-            print(f"  [PASS] Empathetic response triggered for emotional query")
+            print("  [PASS] Empathetic response triggered for emotional query")
         else:
-            print(f"  [PASS] Appropriate response for context")
+            print("  [PASS] Appropriate response for context")
     
-    print(f"\n[PASS] Empathetic Response: System generates contextually appropriate guidance")
+    print("\n[PASS] Empathetic Response: System generates contextually appropriate guidance")
     return True
 
 
@@ -538,12 +533,12 @@ def test_sentient_rag_integration():
     # Full pipeline
     result = fkg.process(query)
     
-    print(f"\n1. CLASSIFICATION:")
+    print("\n1. CLASSIFICATION:")
     print(f"   Primary: {result['classification']['primary_category']}")
     print(f"   All categories: {result['classification']['all_categories']}")
     print(f"   Contexts: {result['classification']['contexts']}")
     
-    print(f"\n2. EMOTIONAL CONTEXT:")
+    print("\n2. EMOTIONAL CONTEXT:")
     ec = result.get("emotional_context", {})
     print(f"   Emotion: {ec.get('primary_emotion')}")
     print(f"   Approach: {ec.get('approach_style')}")
@@ -551,30 +546,30 @@ def test_sentient_rag_integration():
     print(f"   Empathy needed: {ec.get('empathy_needed')}")
     print(f"   User signals: {ec.get('user_signals', [])}")
     
-    print(f"\n3. KNOWLEDGE RETRIEVAL:")
+    print("\n3. KNOWLEDGE RETRIEVAL:")
     print(f"   Insights retrieved: {result['insights_count']}")
     print(f"   Total stored: {result['metadata']['total_insights_stored']}")
     print(f"   Categories: {result['metadata']['categories']}")
     
-    print(f"\n4. CONTEXT HEADER:")
+    print("\n4. CONTEXT HEADER:")
     for line in result["context_header"].split("\n"):
         if line.strip():
             print(f"   {line.strip()}")
     
-    print(f"\n5. KNOWLEDGE CONTEXT:")
+    print("\n5. KNOWLEDGE CONTEXT:")
     for line in result["knowledge_context"].split("\n")[:5]:
         if line.strip():
             print(f"   {line.strip()}")
     
-    print(f"\n6. FULL CONTEXT (as injected into LLM):")
-    context, metadata = get_enhanced_context(query)
+    print("\n6. FULL CONTEXT (as injected into LLM):")
+    context, _metadata = get_enhanced_context(query)
     print(f"   {'-'*50}")
     for line in context.split("\n")[:10]:
         print(f"   {line}")
     if context.count("\n") > 10:
         print(f"   ... ({context.count(chr(10)) - 10} more lines)")
     
-    print(f"\n[PASS] Sentient RAG Integration: Full system working end-to-end")
+    print("\n[PASS] Sentient RAG Integration: Full system working end-to-end")
     return True
 
 
@@ -592,23 +587,16 @@ def test_intelligence_benchmark():
     sentient = get_sentient_thinking()
     
     # Run comprehensive analysis
-    test_queries = [
-        "fix division by zero bug",
-        "optimize sorting algorithm",
-        "I'm stuck and frustrated",
-        "help me learn Python",
-        "URGENT: production down",
-    ]
     
     results = {
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "system": "SL-LLM Sentient Intelligence",
         "capabilities": {},
         "knowledge_graph": {},
         "sentient_metrics": {},
     }
     
-    print(f"\nKnowledge Graph Metrics:")
+    print("\nKnowledge Graph Metrics:")
     kg_stats = {
         "total_insights": fkg._count_insights(),
         "categories": fkg._get_category_counts(),
@@ -618,7 +606,7 @@ def test_intelligence_benchmark():
     for k, v in kg_stats.items():
         print(f"  {k}: {v}")
     
-    print(f"\nSentient Metrics:")
+    print("\nSentient Metrics:")
     sentient_status = sentient.get_status()
     sentient_metrics = {
         "emotional_states_tracked": len(sentient.stream.thoughts),
@@ -631,7 +619,7 @@ def test_intelligence_benchmark():
     for k, v in sentient_metrics.items():
         print(f"  {k}: {v}")
     
-    print(f"\nCapability Assessment:")
+    print("\nCapability Assessment:")
     capabilities = {
         "tfidf_semantic_retrieval": True,
         "multi_factor_scoring": True,
@@ -698,7 +686,7 @@ if __name__ == "__main__":
         try:
             if test_fn():
                 passed += 1
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"\n[FAIL] {name}: {e}")
             import traceback
             traceback.print_exc()

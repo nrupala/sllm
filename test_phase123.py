@@ -6,36 +6,33 @@ Tests all new capabilities across all three phases
 import json
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
 # Phase 1 imports
 from core.persistent_memory import (
-    PersistentMemoryManager,
     CrossInstanceSync,
+    PersistentMemoryManager,
     StrategicPlanner,
     get_phase1_system,
 )
 
 # Phase 2 imports
 from core.phase2_system import (
-    ParallelTaskExecutor,
-    WebCache,
-    OfflineFirstWebAccess,
-    CitationTracker,
     EnhancedHallucinationPrevention,
+    OfflineFirstWebAccess,
+    ParallelTaskExecutor,
     get_phase2_system,
 )
 
 # Phase 3 imports
 from core.phase3_system import (
-    InputSanitizer,
+    CodeVerifier,
+    InstanceRegistry,
     RateLimiter,
     SecurityAudit,
-    InstanceRegistry,
-    CodeVerifier,
     get_phase3_system,
 )
 
@@ -116,7 +113,7 @@ def test_phase1_strategic_planning():
     
     # Test progress update
     planner.update_progress(goal_id, 0.5, "Made good progress")
-    print(f"Updated progress to 50%")
+    print("Updated progress to 50%")
     
     # Test subgoal
     subgoal_id = planner.add_subgoal(goal_id, "Complete testing")
@@ -377,7 +374,7 @@ if __name__ == "__main__":
         try:
             if test_fn():
                 passed += 1
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"\n[FAIL] {name}: {e}")
             import traceback
             traceback.print_exc()
@@ -389,7 +386,7 @@ if __name__ == "__main__":
     
     # Generate results report
     report = {
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "total_tests": passed + failed,
         "passed": passed,
         "failed": failed,

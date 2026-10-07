@@ -21,9 +21,9 @@ import json
 import logging
 import os
 import sys
-from pathlib import Path
-from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 # Configure logging
 logging.basicConfig(
@@ -42,10 +42,9 @@ except ImportError:
 
 # SL-LLM imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from core.client import get_client, detect_gpu
-from tools.builtin import get_default_tools, execute_tool
+from core.client import get_client
 from knowledge_graph_manager import FluidKnowledgeGraph
-
+from tools.builtin import execute_tool, get_default_tools
 
 # ============================================================================
 # MCP Protocol Types
@@ -55,9 +54,9 @@ from knowledge_graph_manager import FluidKnowledgeGraph
 class MCPRequest:
     """MCP JSON-RPC request"""
     jsonrpc: str = "2.0"
-    id: Optional[Any] = None
+    id: Any | None = None
     method: str = ""
-    params: Dict = None
+    params: dict | None = None
     
     def __post_init__(self):
         if self.params is None:
@@ -68,16 +67,16 @@ class MCPRequest:
 class MCPResponse:
     """MCP JSON-RPC response"""
     jsonrpc: str = "2.0"
-    id: Optional[Any] = None
+    id: Any | None = None
     result: Any = None
-    error: Optional[Dict] = None
+    error: dict | None = None
 
 
 # ============================================================================
 # Tool Definitions (MCP Style)
 # ============================================================================
 
-def get_sllm_tools() -> List[Dict]:
+def get_sllm_tools() -> list[dict]:
     """Get SL-LLM tools in MCP format"""
     return [
         {
@@ -207,9 +206,9 @@ class PlaywrightBrowser:
     
     def __init__(self):
         self.playwright = None
-        self.browser = None
+        self.browser: Any = None
         self.context = None
-        self.pages: List[Any] = []
+        self.pages: list[Any] = []
         
     async def initialize(self):
         """Initialize Playwright"""
@@ -220,7 +219,7 @@ class PlaywrightBrowser:
         self.browser = await self.playwright.chromium.launch(headless=True)
         self.context = await self.browser.new_context()
         
-    async def navigate(self, url: str) -> Dict:
+    async def navigate(self, url: str) -> dict:
         """Navigate to URL"""
         if not self.browser:
             await self.initialize()
@@ -231,7 +230,7 @@ class PlaywrightBrowser:
         
         return {"status": "ok", "url": url, "title": await page.title()}
     
-    async def snapshot(self) -> Dict:
+    async def snapshot(self) -> dict:
         """Get accessibility snapshot of current page"""
         if not self.pages:
             return {"error": "No page open"}
@@ -245,7 +244,7 @@ class PlaywrightBrowser:
             "title": await page.title()
         }
     
-    async def click(self, selector: str) -> Dict:
+    async def click(self, selector: str) -> dict:
         """Click element"""
         if not self.pages:
             return {"error": "No page open"}
@@ -255,7 +254,7 @@ class PlaywrightBrowser:
         
         return {"status": "ok", "selector": selector}
     
-    async def type(self, selector: str, text: str) -> Dict:
+    async def type(self, selector: str, text: str) -> dict:
         """Type text into element"""
         if not self.pages:
             return {"error": "No page open"}
@@ -265,7 +264,7 @@ class PlaywrightBrowser:
         
         return {"status": "ok", "selector": selector, "text": text}
     
-    async def evaluate(self, code: str) -> Dict:
+    async def evaluate(self, code: str) -> dict:
         """Evaluate JavaScript in page context"""
         if not self.pages:
             return {"error": "No page open"}
@@ -292,7 +291,7 @@ class SLLMMCPServer:
     
     def __init__(self, with_playwright: bool = False):
         self.with_playwright = with_playwright
-        self.browser = None
+        self.browser: Any = None
         self.kgm = FluidKnowledgeGraph()
         self.llm_client = get_client()
         self.tools = get_default_tools()
@@ -305,7 +304,7 @@ class SLLMMCPServer:
             logger.info("Playwright initialized")
         
         # Initialize LLM client
-        logger.info(f"SL-LLM MCP Server initialized")
+        logger.info("SL-LLM MCP Server initialized")
     
     async def handle_request(self, request: MCPRequest) -> MCPResponse:
         """Handle MCP request"""
@@ -316,14 +315,14 @@ class SLLMMCPServer:
         try:
             result = await self._dispatch(method, params)
             return MCPResponse(id=request_id, result=result)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Error in {method}: {e}")
             return MCPResponse(
                 id=request_id,
                 error={"code": -32603, "message": str(e)}
             )
     
-    async def _dispatch(self, method: str, params: Dict) -> Any:
+    async def _dispatch(self, method: str, params: dict) -> Any:
         """Dispatch to handler"""
         
         # Tool listing
@@ -331,7 +330,7 @@ class SLLMMCPServer:
             return {"tools": get_sllm_tools()}
         
         if method == "tools/call":
-            tool = params.get("name")
+            tool = str(params.get("name", ""))
             args = params.get("arguments", {})
             return await self._call_tool(tool, args)
         
@@ -341,13 +340,13 @@ class SLLMMCPServer:
         
         return {"error": f"Unknown method: {method}"}
     
-    async def _call_tool(self, tool: str, args: Dict) -> Any:
+    async def _call_tool(self, tool: str, args: dict) -> Any:
         """Call a tool"""
         
         # SL-LLM task execution
         if tool == "sllm_execute_task":
             task = args.get("task", "")
-            max_iter = args.get("max_iterations", 5)
+            args.get("max_iterations", 5)
             
             from knowledge_graph_manager import get_enhanced_context
             enhanced_context, kg_metadata = get_enhanced_context(task)
@@ -368,7 +367,7 @@ class SLLMMCPServer:
                     tool_name = call["function"]["name"]
                     try:
                         t_args = json.loads(call["function"]["arguments"])
-                    except:
+                    except Exception:  # noqa: BLE001
                         t_args = {"code": call["function"]["arguments"]}
                     
                     result = execute_tool(tool_name, t_args)
@@ -412,7 +411,7 @@ class SLLMMCPServer:
         
         return {"error": f"Unknown tool: {tool}"}
     
-    async def _playwright_tool(self, tool: str, args: Dict) -> Any:
+    async def _playwright_tool(self, tool: str, args: dict) -> Any:
         """Handle Playwright tool calls"""
         
         if tool == "browser_navigate":
@@ -469,7 +468,7 @@ async def handle_stdio(server: SLLMMCPServer):
                     
                 except json.JSONDecodeError:
                     pass
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.error(f"Error: {e}")
                 
                 buffer = ""
@@ -486,7 +485,6 @@ async def handle_stdio(server: SLLMMCPServer):
 # Main
 # ============================================================================
 
-import asyncio
 
 def main():
     parser = argparse.ArgumentParser(description="SL-LLM MCP Server")

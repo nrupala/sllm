@@ -1,7 +1,8 @@
-import time
 import logging
+import time
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +11,7 @@ def retry(max_attempts: int = 3, delay: float = 1.0, backoff: float = 2.0, excep
     def decorator(fn: Callable) -> Callable:
         @wraps(fn)
         def wrapper(*args, **kwargs) -> Any:
-            last_exception = None
+            last_exception: BaseException | None = None
             for attempt in range(max_attempts):
                 try:
                     return fn(*args, **kwargs)
@@ -20,6 +21,8 @@ def retry(max_attempts: int = 3, delay: float = 1.0, backoff: float = 2.0, excep
                         wait_time = delay * (backoff ** attempt)
                         logger.warning(f"Attempt {attempt+1} failed: {e}. Retrying in {wait_time:.1f}s...")
                         time.sleep(wait_time)
+            if last_exception is None:  # pragma: no cover - max_attempts >= 1 always captures one
+                raise RuntimeError("retry exhausted without an exception")
             raise last_exception
         return wrapper
     return decorator

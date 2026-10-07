@@ -9,7 +9,7 @@ def file_read(args: dict) -> str:
         if not path.exists():
             return f"File not found: {args['path']}"
         return path.read_text(encoding="utf-8")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return f"Error: {e}"
 
 
@@ -19,7 +19,7 @@ def file_write(args: dict) -> str:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(args["content"], encoding="utf-8")
         return f"Written to {args['path']}"
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return f"Error: {e}"
 
 
@@ -27,15 +27,16 @@ def list_directory(args: dict) -> str:
     try:
         path = Path(args.get("path", "."))
         if not path.exists():
-            return f"Directory not found"
+            return "Directory not found"
         items = [f"{p.name}" + ("/" if p.is_dir() else "") for p in path.iterdir()]
         return "\n".join(sorted(items)) if items else "Empty"
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return f"Error: {e}"
 
 
 def execute_code(args: dict) -> str:
-    import tempfile, os
+    import os
+    import tempfile
     timeout = args.get("timeout", 30)
     code = args.get("code", "")
     
@@ -44,7 +45,7 @@ def execute_code(args: dict) -> str:
             f.write(code)
             temp_path = f.name
         
-        result = subprocess.run(["python", temp_path], capture_output=True, text=True, timeout=timeout)
+        result = subprocess.run(["python", temp_path], capture_output=True, text=True, timeout=timeout)  # noqa: PLW1510
         os.unlink(temp_path)
         
         out = result.stdout
@@ -53,7 +54,7 @@ def execute_code(args: dict) -> str:
         return out or "No output"
     except subprocess.TimeoutExpired:
         return f"Timeout ({timeout}s)"
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return f"Error: {e}"
 
 
@@ -68,16 +69,18 @@ def search_code(args: dict) -> str:
             try:
                 if pattern in p.read_text(encoding="utf-8"):
                     results.append(str(p))
-            except:
+            except Exception:  # noqa: S110, BLE001
                 pass
-    except:
+    except Exception:  # noqa: S110, BLE001
         pass
     
     return "\n".join(results[:20]) if results else "No matches"
 
 
 def get_system_info(args: dict) -> str:
-    import platform, psutil
+    import platform
+
+    import psutil
     return json.dumps({
         "platform": platform.platform(),
         "python": platform.python_version(),
@@ -119,7 +122,6 @@ def execute_tool(name: str, args: dict) -> str:
 def git_operations(args: dict) -> str:
     """Git operations via subprocess - no external deps"""
     import subprocess
-    import os
     
     command = args.get("command", "status")
     repo_path = args.get("path", ".")
@@ -138,11 +140,11 @@ def git_operations(args: dict) -> str:
     cmd = git_commands.get(command, ["git", command])
     
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: PLW1510
             cmd, cwd=repo_path, capture_output=True, text=True, timeout=30
         )
         return result.stdout + result.stderr if result.stderr else result.stdout or "Done"
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return f"Git error: {e}"
 
 
@@ -150,7 +152,6 @@ def web_search(args: dict) -> str:
     """Web search via urllib - no external deps"""
     import urllib.parse
     import urllib.request
-    import json
     
     query = args.get("query", "")
     if not query:
@@ -173,14 +174,14 @@ def web_search(args: dict) -> str:
             results.append(f"{match[1]}: {match[0]}")
         
         return "\n".join(results) if results else "No results found"
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return f"Search error: {e}"
 
 
 def database_ops(args: dict) -> str:
     """SQLite database operations - no external deps"""
-    import sqlite3
     import json
+    import sqlite3
     
     operation = args.get("operation", "query")
     db_path = args.get("db_path", "data.db")
@@ -228,16 +229,15 @@ def database_ops(args: dict) -> str:
         conn.close()
         return "Done"
     
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return f"Database error: {e}"
 
 
 def http_request(args: dict) -> str:
     """HTTP requests via urllib - no external deps"""
-    import urllib.request
-    import urllib.parse
     import json
-    import base64
+    import urllib.parse
+    import urllib.request
     
     method = args.get("method", "GET")
     url = args.get("url", "")
@@ -272,7 +272,7 @@ def http_request(args: dict) -> str:
             "body": content[:2000]
         }, indent=2)
     
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return f"HTTP error: {e}"
 
 

@@ -4,7 +4,6 @@ Run this to verify your environment is ready before running main tests.
 """
 
 import sys
-import socket
 
 
 def check_lmstudio():
@@ -22,7 +21,7 @@ def check_lmstudio():
                 print("[FAIL] LM Studio running but no model loaded")
                 return False
         return False
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"[FAIL] LM Studio not accessible: {e}")
         return False
 
@@ -42,7 +41,7 @@ def check_ollama():
                 print("[FAIL] Ollama running but no models")
                 return False
         return False
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"[FAIL] Ollama not accessible: {e}")
         return False
 
@@ -51,11 +50,11 @@ def check_gpu():
     """Check for GPU availability"""
     try:
         import subprocess
-        result = subprocess.run(["nvidia-smi", "-L"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(["nvidia-smi", "-L"], capture_output=True, text=True, timeout=5)  # noqa: PLW1510
         if result.returncode == 0:
             print(f"[PASS] GPU detected: {result.stdout.strip()}")
             return True
-    except:
+    except Exception:  # noqa: S110, BLE001
         pass
     print("[WARN] No NVIDIA GPU detected (will use CPU)")
     return False

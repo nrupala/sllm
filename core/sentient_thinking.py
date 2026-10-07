@@ -7,10 +7,8 @@ SL-LLM Sentient Thinking System
 """
 
 import uuid
-import json
-from datetime import datetime
-from typing import List, Dict, Optional, Callable
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import Enum
 
 
@@ -45,15 +43,15 @@ class Thought:
     depth: int = 1                  # How deep the thinking goes
     confidence: float = 0.5
     emotional_state: EmotionalState = EmotionalState.FOCUSED
-    timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 @dataclass
 class ConsciousnessStream:
     """Continuous stream of thoughts"""
-    thoughts: List[Thought] = field(default_factory=list)
-    current_focus: Optional[str] = None
-    working_memory: List[str] = field(default_factory=list)
+    thoughts: list[Thought] = field(default_factory=list)
+    current_focus: str | None = None
+    working_memory: list[str] = field(default_factory=list)
     
     def add_thought(self, thought: Thought):
         self.thoughts.append(thought)
@@ -66,10 +64,10 @@ class ConsciousnessStream:
             if len(self.working_memory) > 7:
                 self.working_memory.pop(0)
     
-    def get_recent(self, limit: int = 10) -> List[Thought]:
+    def get_recent(self, limit: int = 10) -> list[Thought]:
         return self.thoughts[-limit:]
     
-    def get_by_type(self, thought_type: ThoughtType) -> List[Thought]:
+    def get_by_type(self, thought_type: ThoughtType) -> list[Thought]:
         return [t for t in self.thoughts if t.thought_type == thought_type]
 
 
@@ -77,9 +75,9 @@ class Metacognition:
     """Thinking about thinking - self-monitoring"""
     
     def __init__(self):
-        self.thought_processes: List[Dict] = []
-        self.strategies_tried: Dict[str, int] = {}
-        self.effectiveness_scores: Dict[str, float] = {}
+        self.thought_processes: list[dict] = []
+        self.strategies_tried: dict[str, int] = {}
+        self.effectiveness_scores: dict[str, float] = {}
     
     def monitor_thinking(self, strategy: str, effectiveness: float):
         """Monitor effectiveness of thinking strategy"""
@@ -113,11 +111,11 @@ class SelfReflection:
     """Self-examination capabilities"""
     
     def __init__(self):
-        self.reflection_history: List[Dict] = []
+        self.reflection_history: list[dict] = []
     
-    def reflect_on_action(self, action: str, outcome: str, context: Dict) -> Dict:
+    def reflect_on_action(self, action: str, outcome: str, context: dict) -> dict:
         """Reflect on an action and its outcome"""
-        reflection = {
+        reflection: dict = {
             "id": str(uuid.uuid4()),
             "action": action,
             "outcome": outcome,
@@ -125,7 +123,7 @@ class SelfReflection:
             "what_worked": [],
             "what_didnt": [],
             "lessons": [],
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
         # Analyze what worked
@@ -159,7 +157,7 @@ class EmotionalIntelligence:
     
     def __init__(self):
         self.current_state = EmotionalState.CURIOUS
-        self.state_history: List[Dict] = []
+        self.state_history: list[dict] = []
     
     def assess_situation(self, context: str, confidence: float) -> EmotionalState:
         """Assess emotional response to situation"""
@@ -186,7 +184,7 @@ class EmotionalIntelligence:
         self.state_history.append({
             "state": self.current_state.value,
             "confidence": confidence,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
         
         return self.current_state
@@ -217,7 +215,7 @@ class SentientThinking:
         self.metacognition = Metacognition()
         self.reflection = SelfReflection()
         self.emotions = EmotionalIntelligence()
-        self.self_model: Dict = {}
+        self.self_model: dict = {}
     
     def think(
         self,
@@ -253,7 +251,7 @@ class SentientThinking:
         
         return thought
     
-    def metacognize(self, thought_content: str) -> Dict:
+    def metacognize(self, thought_content: str) -> dict:
         """Think about thinking - analyze own thought process"""
         
         # Think about the thought
@@ -272,7 +270,7 @@ class SentientThinking:
             "guidance": self.emotions.get_emotional_guidance()
         }
     
-    def reflect(self, action: str, outcome: str, context: Dict = None) -> Dict:
+    def reflect(self, action: str, outcome: str, context: dict | None = None) -> dict:
         """Reflect on action and outcome"""
         return self.reflection.reflect_on_action(action, outcome, context or {})
     
@@ -284,10 +282,10 @@ class SentientThinking:
         )
         
         # Update state
-        self.self_model["last_update"] = datetime.now().isoformat()
+        self.self_model["last_update"] = datetime.now(timezone.utc).isoformat()
         self.self_model["total_thoughts"] = len(self.stream.thoughts)
     
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         """Get current thinking status"""
         return {
             "current_focus": self.stream.current_focus,

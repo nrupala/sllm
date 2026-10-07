@@ -4,8 +4,8 @@ This demonstrates that the system retains learned lessons for future use.
 """
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
-from datetime import datetime
 
 
 def build_knowledge_graph():
@@ -16,7 +16,7 @@ def build_knowledge_graph():
     knowledge = {
         "knowledge_graph": {
             "version": "1.0",
-            "created": datetime.now().isoformat(),
+            "created": datetime.now(timezone.utc).isoformat(),
             "entities": [],
             "relationships": []
         }
@@ -104,8 +104,8 @@ def demonstrate_retained_learning():
     print("TESTING RETENTION WITH SIMILAR TASK:")
     print("-"*50)
     
-    from tools.builtin import execute_tool
     from core.client import MockClient
+    from tools.builtin import execute_tool
     
     client = MockClient()
     

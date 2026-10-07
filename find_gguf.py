@@ -1,6 +1,6 @@
 """Find all local GGUF models on the system"""
-from pathlib import Path
 import logging
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("gguf-finder")
@@ -10,7 +10,7 @@ def find_gguf_models():
     models = []
     
     # Search paths
-    paths = [
+    [
         Path("C:/"),
         Path("D:/"),
         Path("D:/models"),
@@ -48,7 +48,7 @@ def find_gguf_models():
                         "size_mb": round(gguf.stat().st_size / (1024**2)),
                         "portable": size_gb < 5,
                     })
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.debug(f"Error scanning {search_path}: {e}")
     
     # Sort by size (largest first)
@@ -76,4 +76,4 @@ if __name__ == "__main__":
     with open("local_gguf_models.json", "w") as f:
         json.dump(output, f, indent=2)
     
-    print(f"Saved to local_gguf_models.json")
+    print("Saved to local_gguf_models.json")

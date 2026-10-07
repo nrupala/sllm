@@ -6,16 +6,12 @@ SL-LLM Persistent Memory System
 """
 
 import json
-import os
 import shutil
-import hashlib
 import uuid
-from pathlib import Path
-from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass, field
-from collections import defaultdict
-
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import ClassVar
 
 # ============================================================
 # AUTO-SAVE/LOAD MANAGER
@@ -24,8 +20,7 @@ from collections import defaultdict
 class PersistentMemoryManager:
     """Manages automatic persistence of all SL-LLM state"""
     
-    STATE_FILES = {
-        "personality": "memory/personality_state.json",
+    STATE_FILES: ClassVar[dict] = {        "personality": "memory/personality_state.json",
         "pdca": "memory/pdca_reward_state.json",
         "dual_loop": "memory/dual_loop_state.json",
         "knowledge_graph": "memory/knowledge_graph.bin",
@@ -42,7 +37,7 @@ class PersistentMemoryManager:
         self.state_file = self.memory_dir / "persistence_state.json"
         
         self._ensure_dirs()
-        self.last_save = None
+        self.last_save: datetime | None = None
         self.save_count = 0
         self.load_count = 0
     
@@ -51,9 +46,9 @@ class PersistentMemoryManager:
         self.backup_dir.mkdir(parents=True, exist_ok=True)
         self.sync_dir.mkdir(parents=True, exist_ok=True)
     
-    def save_all(self, state: Dict = None) -> Dict:
+    def save_all(self, state: dict | None = None) -> dict:
         """Save all persistent state with backup"""
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         backup_path = self.backup_dir / f"backup_{timestamp}"
         backup_path.mkdir(parents=True, exist_ok=True)
         
@@ -69,7 +64,7 @@ class PersistentMemoryManager:
         
         # Save persistence state
         persistence_state = {
-            "last_save": datetime.now().isoformat(),
+            "last_save": datetime.now(timezone.utc).isoformat(),
             "save_count": self.save_count + 1,
             "backup_path": str(backup_path),
             "saved_files": saved_files,
@@ -80,7 +75,7 @@ class PersistentMemoryManager:
             json.dump(persistence_state, f, indent=2)
         
         self.save_count += 1
-        self.last_save = datetime.now()
+        self.last_save = datetime.now(timezone.utc)
         
         return {
             "saved": saved_files,
@@ -89,7 +84,7 @@ class PersistentMemoryManager:
             "timestamp": persistence_state["last_save"],
         }
     
-    def load_all(self) -> Dict:
+    def load_all(self) -> dict:
         """Load all persistent state"""
         if not self.state_file.exists():
             return {"status": "no_previous_state"}
@@ -112,7 +107,7 @@ class PersistentMemoryManager:
             "status": "restored",
         }
     
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         return {
             "save_count": self.save_count,
             "load_count": self.load_count,
@@ -133,15 +128,15 @@ class CrossInstanceSync:
         self.sync_dir = Path(sync_dir)
         self.sync_dir.mkdir(parents=True, exist_ok=True)
         self.instance_id = str(uuid.uuid4())[:8]
-        self.sync_log: List[Dict] = []
+        self.sync_log: list[dict] = []
     
-    def export_state(self, state: Dict) -> str:
+    def export_state(self, state: dict) -> str:
         """Export state for other instances to import"""
-        export_file = self.sync_dir / f"state_{self.instance_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        export_file = self.sync_dir / f"state_{self.instance_id}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
         
         export_data = {
             "instance_id": self.instance_id,
-            "exported_at": datetime.now().isoformat(),
+            "exported_at": datetime.now(timezone.utc).isoformat(),
             "state": state,
         }
         
@@ -151,12 +146,12 @@ class CrossInstanceSync:
         self.sync_log.append({
             "action": "export",
             "file": str(export_file),
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         
         return str(export_file)
     
-    def import_state(self, filepath: str) -> Dict:
+    def import_state(self, filepath: str) -> dict:
         """Import state from another instance"""
         path = Path(filepath)
         if not path.exists():
@@ -169,7 +164,7 @@ class CrossInstanceSync:
             "action": "import",
             "source": data.get("instance_id", "unknown"),
             "file": str(path),
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         
         return {
@@ -178,7 +173,7 @@ class CrossInstanceSync:
             "state": data.get("state", {}),
         }
     
-    def discover_exports(self) -> List[Dict]:
+    def discover_exports(self) -> list[dict]:
         """Find available state exports from other instances"""
         exports = []
         for f in self.sync_dir.glob("state_*.json"):
@@ -191,12 +186,12 @@ class CrossInstanceSync:
                         "instance_id": data.get("instance_id"),
                         "exported_at": data.get("exported_at"),
                     })
-                except:
+                except Exception:  # noqa: S110, BLE001
                     pass
         
         return sorted(exports, key=lambda x: x.get("exported_at", ""), reverse=True)
     
-    def get_sync_status(self) -> Dict:
+    def get_sync_status(self) -> dict:
         return {
             "instance_id": self.instance_id,
             "sync_dir": str(self.sync_dir),
@@ -218,10 +213,10 @@ class StrategicGoal:
     priority: float  # 0.0-1.0
     status: str  # active, completed, abandoned
     created: str
-    deadline: Optional[str] = None
-    subgoals: List[str] = field(default_factory=list)
+    deadline: str | None = None
+    subgoals: list[str] = field(default_factory=list)
     progress: float = 0.0
-    lessons_learned: List[str] = field(default_factory=list)
+    lessons_learned: list[str] = field(default_factory=list)
 
 
 class StrategicPlanner:
@@ -229,12 +224,12 @@ class StrategicPlanner:
     
     def __init__(self, state_file: str = "D:/sl/projects/sllm/memory/strategic_plan.json"):
         self.state_file = Path(state_file)
-        self.goals: Dict[str, StrategicGoal] = {}
-        self.plan_history: List[Dict] = []
+        self.goals: dict[str, StrategicGoal] = {}
+        self.plan_history: list[dict] = []
         self._load()
     
     def create_goal(self, name: str, description: str, priority: float = 0.5,
-                   deadline: str = None) -> str:
+                   deadline: str | None = None) -> str:
         """Create a new strategic goal"""
         goal_id = str(uuid.uuid4())[:8]
         goal = StrategicGoal(
@@ -243,14 +238,14 @@ class StrategicPlanner:
             description=description,
             priority=priority,
             status="active",
-            created=datetime.now().isoformat(),
+            created=datetime.now(timezone.utc).isoformat(),
             deadline=deadline,
         )
         self.goals[goal_id] = goal
         self._save()
         return goal_id
     
-    def update_progress(self, goal_id: str, progress: float, lesson: str = None):
+    def update_progress(self, goal_id: str, progress: float, lesson: str | None = None):
         """Update goal progress"""
         if goal_id in self.goals:
             goal = self.goals[goal_id]
@@ -272,12 +267,12 @@ class StrategicPlanner:
                 description=f"Subgoal of {self.goals[goal_id].name}",
                 priority=self.goals[goal_id].priority * 0.8,
                 status="active",
-                created=datetime.now().isoformat(),
+                created=datetime.now(timezone.utc).isoformat(),
             )
             self._save()
         return subgoal_id
     
-    def get_active_goals(self) -> List[Dict]:
+    def get_active_goals(self) -> list[dict]:
         """Get all active goals sorted by priority"""
         active = [g for g in self.goals.values() if g.status == "active"]
         active.sort(key=lambda g: g.priority, reverse=True)
@@ -296,7 +291,7 @@ class StrategicPlanner:
             for g in active
         ]
     
-    def get_completed_goals(self) -> List[Dict]:
+    def get_completed_goals(self) -> list[dict]:
         """Get completed goals"""
         completed = [g for g in self.goals.values() if g.status == "completed"]
         return [
@@ -310,7 +305,7 @@ class StrategicPlanner:
             for g in completed
         ]
     
-    def get_strategic_overview(self) -> Dict:
+    def get_strategic_overview(self) -> dict:
         """Get complete strategic overview"""
         active = self.get_active_goals()
         completed = self.get_completed_goals()
@@ -348,7 +343,7 @@ class StrategicPlanner:
                 for gid, g in self.goals.items()
             },
             "plan_history": self.plan_history[-50:],
-            "saved_at": datetime.now().isoformat(),
+            "saved_at": datetime.now(timezone.utc).isoformat(),
         }
         
         self.state_file.parent.mkdir(parents=True, exist_ok=True)
@@ -379,7 +374,7 @@ class StrategicPlanner:
                 )
             
             self.plan_history = data.get("plan_history", [])
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Could not load strategic plan: {e}")
 
 
@@ -395,7 +390,7 @@ class Phase1System:
         self.sync = CrossInstanceSync(f"{base_dir}/memory/sync")
         self.planner = StrategicPlanner(f"{base_dir}/memory/strategic_plan.json")
     
-    def startup(self) -> Dict:
+    def startup(self) -> dict:
         """Called on SL-LLM startup"""
         load_result = self.persistence.load_all()
         
@@ -423,7 +418,7 @@ class Phase1System:
             "sync": self.sync.get_sync_status(),
         }
     
-    def shutdown(self, state: Dict = None) -> Dict:
+    def shutdown(self, state: dict | None = None) -> dict:
         """Called on SL-LLM shutdown"""
         save_result = self.persistence.save_all(state)
         export_result = self.sync.export_state(state or {})
@@ -433,7 +428,7 @@ class Phase1System:
             "export": export_result,
         }
     
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         return {
             "persistence": self.persistence.get_status(),
             "sync": self.sync.get_sync_status(),

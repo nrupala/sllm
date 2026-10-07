@@ -8,18 +8,17 @@ modifies the code to fix it, and verifies the fix works.
 """
 
 import json
-import time
+from datetime import datetime, timezone
 from pathlib import Path
-from datetime import datetime
 
-RESULTS = []
+RESULTS: list = []
 BASE = "D:/sl/projects/sllm/test_run_samples"
 Path(BASE).mkdir(parents=True, exist_ok=True)
 
 
 def log_step(phase, message, data=None):
     entry = {
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "phase": phase,
         "message": message,
         "data": data
@@ -35,16 +34,16 @@ def run_test():
     print("SL-LLM SELF-LEARNING TEST: Code -> Error -> Reflect -> Fix -> Verify")
     print("=" * 70)
     
-    from tools.builtin import execute_tool
+    from core.agent import MemoryStore, SelfEvaluator
     from core.client import MockClient
-    from core.self_modify import SelfModifier, ReflectiveAgent
-    from core.agent import SelfEvaluator, MemoryStore
+    from core.self_modify import ReflectiveAgent, SelfModifier
+    from tools.builtin import execute_tool
     
     # Initialize components
     client = MockClient()
     modifier = SelfModifier(client=client)
     evaluator = SelfEvaluator(client)
-    reflection_agent = ReflectiveAgent(client, modifier, evaluator)
+    ReflectiveAgent(client, modifier, evaluator)
     memory = MemoryStore()
     
     # ============================================================
@@ -193,14 +192,14 @@ Add proper division by zero handling."""
     print("\n" + "=" * 70)
     print("SELF-LEARNING TEST SUMMARY")
     print("=" * 70)
-    print(f"1. Generated buggy code: YES")
+    print("1. Generated buggy code: YES")
     print(f"2. Executed and detected error: {'YES' if error_detected else 'NO'}")
     print(f"3. Self-reflection analyzed error: YES ({len(reflection_output)} chars)")
-    print(f"4. Generated fix based on reflection: YES")
+    print("4. Generated fix based on reflection: YES")
     print(f"5. Verification - normal division: {'PASS' if normal_works else 'FAIL'}")
     print(f"6. Verification - zero division handled: {'PASS' if zero_handled else 'FAIL'}")
-    print(f"7. Learning saved to memory: YES")
-    print(f"8. Checkpoint for safety: YES")
+    print("7. Learning saved to memory: YES")
+    print("8. Checkpoint for safety: YES")
     print("=" * 70)
     print(f"OVERALL: {'SUCCESS - SELF-LEARNING VERIFIED' if overall_success else 'PARTIAL'}")
     print("=" * 70)
@@ -224,7 +223,7 @@ def save_results(result):
     with open(json_path, "w") as f:
         json.dump({
             "test_name": "Self-Learning Code Fix Cycle",
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "result": result,
             "steps": RESULTS
         }, f, indent=2)
@@ -233,7 +232,7 @@ def save_results(result):
     md_path = f"{BASE}/self_learning_report.md"
     with open(md_path, "w") as f:
         f.write("# SL-LLM Self-Learning Test Report\n\n")
-        f.write(f"**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        f.write(f"**Date:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}\n\n")
         f.write(f"**Status:** {'PASSED' if result['overall_success'] else 'FAILED'}\n\n")
         f.write("## Test Scenario\n\n")
         f.write("1. Generate code with deliberate bug (no zero-check in division)\n")
@@ -252,7 +251,7 @@ def save_results(result):
             f.write(f"### {entry['phase']}\n")
             f.write(f"{entry['message']}\n\n")
     
-    print(f"\nResults saved to:")
+    print("\nResults saved to:")
     print(f"  - {json_path}")
     print(f"  - {md_path}")
     

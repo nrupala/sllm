@@ -8,7 +8,6 @@ Integrates available models from:
 import json
 import os
 from pathlib import Path
-from typing import Dict, List, Optional
 
 
 class ModelRegistry:
@@ -18,7 +17,7 @@ class ModelRegistry:
         self.local_models = self._load_local_models()
         self.cloud_providers = self._load_cloud_providers()
     
-    def _load_local_models(self) -> List[Dict]:
+    def _load_local_models(self) -> list[dict]:
         """Load available local models"""
         models = []
         
@@ -35,7 +34,7 @@ class ModelRegistry:
                         "provider": "lmstudio",
                         "type": "local"
                     })
-        except:
+        except Exception:  # noqa: S110, BLE001
             pass
         
         # Ollama
@@ -51,7 +50,7 @@ class ModelRegistry:
                         "provider": "ollama",
                         "type": "local"
                     })
-        except:
+        except Exception:  # noqa: S110, BLE001
             pass
         
         # GGUF files
@@ -79,7 +78,7 @@ class ModelRegistry:
         
         return models
     
-    def _load_cloud_providers(self) -> Dict:
+    def _load_cloud_providers(self) -> dict:
         """Load cloud provider configurations"""
         providers = {}
         
@@ -109,12 +108,12 @@ class ModelRegistry:
                         "doc": provider_data.get("doc", ""),
                         "models": models
                     }
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"Could not load cloud providers: {e}")
         
         return providers
     
-    def get_all_models(self) -> List[Dict]:
+    def get_all_models(self) -> list[dict]:
         """Get all available models (local + cloud)"""
         local = [{"**m": m["id"], "name": m["name"], "provider": m["provider"], "location": "local"} 
                  for m in self.local_models]
@@ -136,7 +135,7 @@ class ModelRegistry:
         
         return local + cloud
     
-    def get_model_info(self, model_id: str) -> Optional[Dict]:
+    def get_model_info(self, model_id: str) -> dict | None:
         """Get detailed info about a model"""
         # Check local
         for m in self.local_models:
@@ -157,7 +156,7 @@ class ModelRegistry:
         
         return None
     
-    def list_providers(self) -> List[Dict]:
+    def list_providers(self) -> list[dict]:
         """List all cloud providers"""
         result = []
         for prov_id, prov in self.cloud_providers.items():

@@ -7,15 +7,12 @@ SL-LLM Dual-Loop Learning System: RAG-PDCA + GAN-PDCA
 """
 
 import json
-import math
-import uuid
 import re
+import uuid
+from collections.abc import Callable
+from datetime import datetime, timezone
 from pathlib import Path
-from datetime import datetime
-from typing import List, Dict, Optional, Tuple, Callable
-from dataclasses import dataclass, field
-from collections import defaultdict
-
+from typing import ClassVar
 
 # ============================================================
 # HALLUCINATION AVOIDANCE SYSTEM
@@ -24,22 +21,20 @@ from collections import defaultdict
 class HallucinationGuard:
     """Prevents hallucination by design through multiple validation layers"""
     
-    HALLUCINATION_PATTERNS = [
-        r"(i think|maybe|perhaps|i believe|probably)\s+(that\s+)?(it|this|the)",
+    HALLUCINATION_PATTERNS: ClassVar[list] = [        r"(i think|maybe|perhaps|i believe|probably)\s+(that\s+)?(it|this|the)",
         r"according to (my|our) (knowledge|understanding|training)",
         r"as (an|a) (ai|language model|llm)",
         r"i (don't|cannot|can't) (have|access|know)",
         r"this is (not|purely) (real|factual|verified)",
     ]
     
-    CONFIDENCE_MARKERS = {
-        "high": ["definitely", "certainly", "verified", "confirmed", "proven", "fact"],
+    CONFIDENCE_MARKERS: ClassVar[dict] = {        "high": ["definitely", "certainly", "verified", "confirmed", "proven", "fact"],
         "medium": ["likely", "probably", "suggests", "indicates", "appears"],
         "low": ["possibly", "might", "could", "perhaps", "uncertain", "unclear"],
     }
     
     @classmethod
-    def check_grounding(cls, output: str, context: str, knowledge: List[Dict]) -> Dict:
+    def check_grounding(cls, output: str, context: str, knowledge: list[dict]) -> dict:
         """Check if output is grounded in provided context and knowledge"""
         issues = []
         grounding_score = 1.0
@@ -64,8 +59,7 @@ class HallucinationGuard:
         
         # Check for overconfident claims without evidence
         high_confidence_words = cls.CONFIDENCE_MARKERS["high"]
-        if any(w in output.lower() for w in high_confidence_words):
-            if not context or len(context) < 100:
+        if any(w in output.lower() for w in high_confidence_words) and (not context or len(context) < 100):
                 issues.append("High confidence claim without sufficient grounding context")
                 grounding_score -= 0.15
         
@@ -83,7 +77,7 @@ class HallucinationGuard:
         }
     
     @classmethod
-    def _check_fabricated_specifics(cls, output: str, context: str) -> List[str]:
+    def _check_fabricated_specifics(cls, output: str, context: str) -> list[str]:
         """Check for potentially fabricated specific claims"""
         issues = []
         context_lower = context.lower()
@@ -91,9 +85,7 @@ class HallucinationGuard:
         # Check for specific statistics not in context
         stat_patterns = re.findall(r'(\d+\.?\d*)\s*%', output)
         for stat in stat_patterns:
-            if stat not in context_lower:
-                # Allow common percentages
-                if stat not in ["100", "0", "50", "25", "75"]:
+            if stat not in context_lower and stat not in ["100", "0", "50", "25", "75"]:  # Allow common percentages
                     issues.append(f"Unverified statistic: {stat}%")
         
         # Check for specific dates not in context
@@ -105,7 +97,7 @@ class HallucinationGuard:
         return issues[:3]  # Limit to top 3 issues
     
     @classmethod
-    def adversarial_validate(cls, output: str, task: str) -> Dict:
+    def adversarial_validate(cls, output: str, task: str) -> dict:
         """Adversarial validation: try to find flaws in the output"""
         flaws = []
         strength = 1.0
@@ -163,10 +155,7 @@ class HallucinationGuard:
     @classmethod
     def _has_incomplete_logic(cls, text: str) -> bool:
         """Check for incomplete logical flow"""
-        if "therefore" in text.lower() or "thus" in text.lower():
-            if "because" not in text.lower() and "since" not in text.lower():
-                return True
-        return False
+        return ("therefore" in text.lower() or "thus" in text.lower()) and "because" not in text.lower() and "since" not in text.lower()
     
     @classmethod
     def _count_unsupported_claims(cls, text: str) -> int:
@@ -188,7 +177,7 @@ class HallucinationGuard:
         return unsupported
     
     @classmethod
-    def _validate_code(cls, code: str) -> List[str]:
+    def _validate_code(cls, code: str) -> list[str]:
         """Basic code validation"""
         issues = []
         
@@ -218,10 +207,10 @@ class RAGPDCALoop:
                  max_iterations: int = 10):
         self.reward_saturation_threshold = reward_saturation_threshold
         self.max_iterations = max_iterations
-        self.history: List[Dict] = []
+        self.history: list[dict] = []
     
     def run(self, task: str, retrieve_fn: Callable, generate_fn: Callable,
-            execute_fn: Callable, validate_fn: Callable, store_fn: Callable) -> Dict:
+            execute_fn: Callable, validate_fn: Callable, store_fn: Callable) -> dict:
         """
         Run RAG-PDCA loop until reward saturates.
         
@@ -235,7 +224,7 @@ class RAGPDCALoop:
         """
         iteration = 0
         prev_reward = 0.0
-        rewards = []
+        rewards: list = []
         best_output = None
         best_reward = 0.0
         
@@ -283,7 +272,7 @@ class RAGPDCALoop:
             "history": self.history,
         }
     
-    def _plan(self, task: str, knowledge: List[Dict], rewards: List[float]) -> Dict:
+    def _plan(self, task: str, knowledge: list[dict], rewards: list[float]) -> dict:
         """Plan approach based on task and reward history"""
         plan = {
             "knowledge_available": len(knowledge),
@@ -312,15 +301,15 @@ class Generator:
     """Generates output, improves through discriminator feedback"""
     
     def __init__(self):
-        self.output_history: List[Dict] = []
-        self.style_preferences: Dict[str, float] = {
+        self.output_history: list[dict] = []
+        self.style_preferences: dict[str, float] = {
             "detail_level": 0.5,
             "formality": 0.5,
             "creativity": 0.5,
             "caution": 0.5,
         }
     
-    def generate(self, task: str, knowledge: List[Dict], feedback: Dict = None) -> str:
+    def generate(self, task: str, knowledge: list[dict], feedback: dict | None = None) -> str | None:
         """Generate output, adjusted by feedback"""
         if feedback:
             self._adjust_style(feedback)
@@ -331,12 +320,12 @@ class Generator:
             "task": task[:50],
             "knowledge_used": len(knowledge),
             "style": dict(self.style_preferences),
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         
         return None  # Actual generation done by LLM
     
-    def _adjust_style(self, feedback: Dict):
+    def _adjust_style(self, feedback: dict):
         """Adjust generation style based on discriminator feedback"""
         lr = 0.1  # learning rate
         
@@ -363,14 +352,14 @@ class Discriminator:
     """Validates generator output, provides feedback for improvement"""
     
     def __init__(self):
-        self.validation_history: List[Dict] = []
+        self.validation_history: list[dict] = []
         self.false_positive_rate = 0.0
         self.false_negative_rate = 0.0
     
-    def validate(self, output: str, task: str, knowledge: List[Dict],
-                 execution_result: str = "") -> Dict:
+    def validate(self, output: str, task: str, knowledge: list[dict],
+                 execution_result: str = "") -> dict:
         """Validate output and provide detailed feedback"""
-        feedback = {}
+        feedback: dict = {}
         
         # Grounding check
         grounding = HallucinationGuard.check_grounding(output, "", knowledge)
@@ -399,7 +388,7 @@ class Discriminator:
             "task": task[:50],
             "score": score,
             "feedback": {k: v for k, v in feedback.items() if k != "grounding"},
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         
         return {
@@ -408,7 +397,7 @@ class Discriminator:
             "passed": score >= 0.6,
         }
     
-    def _compute_score(self, feedback: Dict) -> float:
+    def _compute_score(self, feedback: dict) -> float:
         """Compute overall validation score"""
         score = 1.0
         
@@ -453,7 +442,7 @@ class GANPDCALoop:
         self.max_iterations = max_iterations
     
     def run(self, task: str, retrieve_fn: Callable, llm_generate_fn: Callable,
-            execute_fn: Callable, store_fn: Callable) -> Dict:
+            execute_fn: Callable, store_fn: Callable) -> dict:
         """
         Run GAN-PDCA loop until discriminator score saturates.
         
@@ -530,10 +519,10 @@ class DualLoopOrchestrator:
                  max_iterations: int = 10):
         self.rag_loop = RAGPDCALoop(reward_saturation_threshold, max_iterations)
         self.gan_loop = GANPDCALoop(reward_saturation_threshold, max_iterations)
-        self.run_history: List[Dict] = []
+        self.run_history: list[dict] = []
     
     def run(self, task: str, retrieve_fn: Callable, generate_fn: Callable,
-            execute_fn: Callable, validate_fn: Callable, store_fn: Callable) -> Dict:
+            execute_fn: Callable, validate_fn: Callable, store_fn: Callable) -> dict:
         """
         Run both loops and combine results.
         
@@ -578,7 +567,7 @@ class DualLoopOrchestrator:
         self.run_history.append(result)
         return result
     
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         return {
             "total_runs": len(self.run_history),
             "average_reward": sum(r["combined_reward"] for r in self.run_history) / max(len(self.run_history), 1),
@@ -595,12 +584,12 @@ class FactualGroundingEngine:
     """Ensures all outputs are grounded in verifiable facts"""
     
     def __init__(self):
-        self.verified_facts: Dict[str, Dict] = {}
-        self.fact_check_log: List[Dict] = []
+        self.verified_facts: dict[str, dict] = {}
+        self.fact_check_log: list[dict] = []
     
-    def ground_output(self, output: str, knowledge: List[Dict], task: str) -> Dict:
+    def ground_output(self, output: str, knowledge: list[dict], task: str) -> dict:
         """Ground output in verified facts and knowledge"""
-        result = {
+        result: dict = {
             "grounded": True,
             "confidence": 1.0,
             "grounded_claims": [],
@@ -634,12 +623,12 @@ class FactualGroundingEngine:
             "grounded": len(result["grounded_claims"]),
             "ungrounded": len(result["ungrounded_claims"]),
             "risk": result["hallucination_risk"],
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         
         return result
     
-    def _extract_claims(self, text: str) -> List[str]:
+    def _extract_claims(self, text: str) -> list[str]:
         """Extract factual claims from text"""
         claims = []
         
@@ -647,15 +636,15 @@ class FactualGroundingEngine:
         sentences = re.split(r'[.!?]+', text)
         for sentence in sentences:
             sentence = sentence.strip()
-            if len(sentence) > 20:
+            if len(sentence) > 20 and any(
+                marker in sentence.lower() for marker in ["is", "are", "was", "were", "has", "have"]
+            ) and not any(marker in sentence.lower() for marker in ["if", "might", "could", "perhaps"]):
                 # Check for factual assertion patterns
-                if any(marker in sentence.lower() for marker in ["is", "are", "was", "were", "has", "have"]):
-                    if not any(marker in sentence.lower() for marker in ["if", "might", "could", "perhaps"]):
-                        claims.append(sentence)
+                claims.append(sentence)
         
         return claims[:10]  # Limit to top 10 claims
     
-    def _verify_claim(self, claim: str, knowledge: List[Dict]) -> bool:
+    def _verify_claim(self, claim: str, knowledge: list[dict]) -> bool:
         """Verify a claim against knowledge"""
         claim_lower = claim.lower()
         claim_words = set(claim_lower.split())
@@ -670,7 +659,7 @@ class FactualGroundingEngine:
                 return True
         
         # Check against verified facts
-        for fact_id, fact in self.verified_facts.items():
+        for fact in self.verified_facts.values():
             if any(word in fact["content"].lower() for word in list(claim_words)[:5]):
                 return True
         
@@ -682,10 +671,10 @@ class FactualGroundingEngine:
         self.verified_facts[fact_id] = {
             "content": content,
             "source": source,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
     
-    def get_grounding_stats(self) -> Dict:
+    def get_grounding_stats(self) -> dict:
         if not self.fact_check_log:
             return {"total_checks": 0}
         
@@ -717,7 +706,7 @@ class DualLoopPDCAWithGrounding:
         self._load_state()
     
     def run_task(self, task: str, retrieve_fn: Callable, generate_fn: Callable,
-                 execute_fn: Callable, validate_fn: Callable, store_fn: Callable) -> Dict:
+                 execute_fn: Callable, validate_fn: Callable, store_fn: Callable) -> dict:
         """Run a task through the complete dual-loop system"""
         
         # Wrap generate_fn with grounding
@@ -753,7 +742,7 @@ class DualLoopPDCAWithGrounding:
         
         return result
     
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         return {
             "orchestrator": self.orchestrator.get_status(),
             "grounding": self.grounding.get_grounding_stats(),
@@ -764,7 +753,7 @@ class DualLoopPDCAWithGrounding:
         data = {
             "run_history_count": len(self.orchestrator.run_history),
             "grounding_stats": self.grounding.get_grounding_stats(),
-            "saved_at": datetime.now().isoformat(),
+            "saved_at": datetime.now(timezone.utc).isoformat(),
         }
         with open(self.state_file, "w") as f:
             json.dump(data, f, indent=2)
@@ -773,9 +762,9 @@ class DualLoopPDCAWithGrounding:
         if self.state_file.exists():
             try:
                 with open(self.state_file, "r") as f:
-                    data = json.load(f)
-                print(f"Dual-loop state loaded")
-            except:
+                    json.load(f)
+                print("Dual-loop state loaded")
+            except Exception:  # noqa: S110, BLE001
                 pass
 
 

@@ -1,9 +1,8 @@
 """
 SL-LLM GUI with Flask
 """
-from flask import Flask, render_template_string, request, jsonify
-import os
-import threading
+
+from flask import Flask, render_template_string, request
 
 app = Flask(__name__)
 
@@ -75,8 +74,8 @@ def status():
     try:
         runner = get_runner()
         return f"GPU: {runner.provider}\nProvider: {runner.provider}\nModel: {runner.model}"
-    except Exception as e:
-        return f"Error: {str(e)}"
+    except Exception as e:  # noqa: BLE001
+        return f"Error: {e!s}"
 
 @app.route('/execute')
 def execute():
@@ -88,8 +87,8 @@ def execute():
         runner = get_runner()
         result = runner.run_task(task)
         return result
-    except Exception as e:
-        return f"Error: {str(e)}"
+    except Exception as e:  # noqa: BLE001
+        return f"Error: {e!s}"
 
 if __name__ == "__main__":
     print("Starting SL-LLM GUI...")

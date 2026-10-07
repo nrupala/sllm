@@ -1,6 +1,7 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
-from typing import Optional, Literal
-from datetime import datetime
+
 
 class Settings(BaseModel):
     """Application settings."""

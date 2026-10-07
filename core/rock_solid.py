@@ -8,12 +8,10 @@ Implements the unbeatable, irreplaceable principles:
 5. Sustainable Innovation
 """
 
-import os
 import json
-import traceback
-from typing import Any, Dict, Optional
+import sys
 from functools import wraps
-
+from typing import Any
 
 # ============================================================================
 # ZERO-FAULT LOGIC
@@ -28,7 +26,7 @@ def safe_divide(numerator: Any, denominator: Any) -> float:
     return numerator / denominator
 
 
-def validate_input(data: Any, schema: Dict = None) -> bool:
+def validate_input(data: Any, schema: dict | None = None) -> bool:
     """Validate input against schema"""
     if schema is None:
         return True
@@ -58,7 +56,7 @@ def error_boundary(func):
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {"error": str(e), "type": type(e).__name__}
     return wrapper
 
@@ -85,7 +83,7 @@ class PerformanceMonitor:
         self.metrics["total_time"] += duration
         self.metrics["avg_time"] = self.metrics["total_time"] / self.metrics["requests"]
     
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         return {
             **self.metrics,
             "error_rate": self.metrics["errors"] / max(1, self.metrics["requests"])
@@ -100,7 +98,7 @@ class AdaptiveOptimizer:
         """Determine batch size based on available resources"""
         import ctypes
         try:
-            if os.name == 'nt':
+            if sys.platform == "win32":
                 kernel32 = ctypes.windll.kernel32
                 mem = ctypes.c_ulong()
                 kernel32.GlobalMemoryStatus(ctypes.byref(mem))
@@ -112,7 +110,7 @@ class AdaptiveOptimizer:
                     return 16
                 else:
                     return 4
-        except:
+        except Exception:  # noqa: S110, BLE001
             pass
         return 8  # Safe default
 
@@ -139,7 +137,7 @@ class FallbackChain:
                 result = fn(*args, **kwargs)
                 self.current = name
                 return {"success": True, "result": result, "backend": name}
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append(f"{name}: {e}")
                 continue
         
@@ -155,12 +153,12 @@ class HealthChecker:
     def register(self, name: str, check_fn):
         self.checks[name] = check_fn
     
-    def run_all(self) -> Dict:
-        results = {"healthy": True, "checks": {}}
+    def run_all(self) -> dict:
+        results: dict = {"healthy": True, "checks": {}}
         for name, check in self.checks.items():
             try:
                 results["checks"][name] = check()
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 results["checks"][name] = {"status": "error", "message": str(e)}
                 results["healthy"] = False
         return results
@@ -191,7 +189,7 @@ class SLLEcosystem:
         if name in self.capabilities:
             self.capabilities[name] = False
     
-    def get_capabilities(self) -> Dict:
+    def get_capabilities(self) -> dict:
         return self.capabilities.copy()
 
 
@@ -204,7 +202,7 @@ class InnovationLoop:
     
     def __init__(self, storage_path: str = "memory/"):
         self.storage_path = storage_path
-        self.feedback = []
+        self.feedback: list = []
     
     def record(self, task: str, result: str, success: bool):
         """Record task outcome for learning"""
@@ -248,7 +246,7 @@ class RockSolidSLM:
         self.health.register("ecosystem", self.ecosystem.get_capabilities)
     
     @error_boundary
-    def execute(self, task: str, **kwargs) -> Dict:
+    def execute(self, task: str, **kwargs) -> dict:
         """Execute task with rock-solid guarantees"""
         import time
         start = time.time()
@@ -280,10 +278,10 @@ class RockSolidSLM:
         
         return result
     
-    def _execute_lmstudio(self, task: str, kwargs: Dict) -> str:
+    def _execute_lmstudio(self, task: str, kwargs: dict) -> str:
         """Execute via LM Studio"""
-        import urllib.request
         import json
+        import urllib.request
         
         payload = {
             "model": kwargs.get("model", "qwen/qwen2.5-coder-14b"),
@@ -301,10 +299,10 @@ class RockSolidSLM:
             result = json.loads(resp.read())
             return result["choices"][0]["message"]["content"]
     
-    def _execute_ollama(self, task: str, kwargs: Dict) -> str:
+    def _execute_ollama(self, task: str, kwargs: dict) -> str:
         """Execute via Ollama"""
-        import urllib.request
         import json
+        import urllib.request
         
         payload = {
             "model": kwargs.get("model", "qwen3.5:9b"),
@@ -321,11 +319,11 @@ class RockSolidSLM:
             result = json.loads(resp.read())
             return result["message"]["content"]
     
-    def _execute_mock(self, task: str, kwargs: Dict) -> str:
+    def _execute_mock(self, task: str, kwargs: dict) -> str:
         """Mock execution"""
         return f"Rock-solid mock response to: {task[:50]}..."
     
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         """Get system status"""
         return {
             "health": self.health.run_all(),

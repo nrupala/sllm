@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 LLM Link - Local LLM Discovery and Linking
 Discovers and links with local LLM engines on the machine.
@@ -21,18 +20,12 @@ Usage:
 
 import argparse
 import json
-import os
 import platform
-import re
 import socket
 import subprocess
-import sys
-import time
-from pathlib import Path
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
+from dataclasses import dataclass, field
+from pathlib import Path
 
 # ============================================================================
 # Configuration
@@ -42,11 +35,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 class LLMEngine:
     """Represents a detected LLM engine"""
     name: str
-    url: Optional[str] = None
+    url: str | None = None
     port: int = 0
     status: str = "unknown"  # running, stopped, error
-    models: List[str] = field(default_factory=list)
-    info: Dict = field(default_factory=dict)
+    models: list[str] = field(default_factory=list)
+    info: dict = field(default_factory=dict)
     gpu_accelerated: bool = False
     
     @property
@@ -70,23 +63,23 @@ ENGINES = {
 # GPU Detection
 # ============================================================================
 
-def detect_gpu() -> Tuple[str, Optional[str]]:
+def detect_gpu() -> tuple[str, str | None]:
     """Detect GPU availability"""
     system = platform.system()
     
     if system == "Windows":
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # noqa: PLW1510
                 ["nvidia-smi", "-L"], 
                 capture_output=True, text=True, timeout=5
             )
             if result.returncode == 0:
                 return "nvidia", result.stdout.strip()
-        except:
+        except Exception:  # noqa: S110, BLE001
             pass
         
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # noqa: PLW1510
                 ["wmic", "path", "win32_VideoController", "get", "name"],
                 capture_output=True, text=True, timeout=5
             )
@@ -94,30 +87,29 @@ def detect_gpu() -> Tuple[str, Optional[str]]:
                 return "amd", result.stdout.strip()
             elif result.returncode == 0 and "Intel" in result.stdout:
                 return "intel", result.stdout.strip()
-        except:
+        except Exception:  # noqa: S110, BLE001
             pass
     
     elif system == "Darwin":  # macOS
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # noqa: PLW1510
                 ["system_profiler", "SPDisplaysDataType"],
                 capture_output=True, text=True, timeout=10
             )
-            if result.returncode == 0:
-                if "Apple" in result.stdout:
-                    return "apple_metal", "Apple Silicon GPU"
-        except:
+            if result.returncode == 0 and "Apple" in result.stdout:
+                return "apple_metal", "Apple Silicon GPU"
+        except Exception:  # noqa: S110, BLE001
             pass
     
     elif system == "Linux":
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # noqa: PLW1510
                 ["nvidia-smi", "-L"],
                 capture_output=True, text=True, timeout=5
             )
             if result.returncode == 0:
                 return "nvidia", result.stdout.strip()
-        except:
+        except Exception:  # noqa: S110, BLE001
             pass
     
     return "cpu", None
@@ -134,13 +126,13 @@ def check_port(host: str, port: int, timeout: float = 2.0) -> bool:
     try:
         sock.connect((host, port))
         return True
-    except:
+    except Exception:  # noqa: BLE001
         return False
     finally:
         sock.close()
 
 
-def detect_lmstudio() -> Optional[LLMEngine]:
+def detect_lmstudio() -> LLMEngine | None:
     """Detect LM Studio"""
     ports = [1234]
     
@@ -157,7 +149,7 @@ def detect_lmstudio() -> Optional[LLMEngine]:
                     try:
                         info_resp = requests.get(f"http://localhost:{port}/v1/models", timeout=2)
                         info = info_resp.json()
-                    except:
+                    except Exception:  # noqa: BLE001
                         info = {}
                     
                     return LLMEngine(
@@ -168,13 +160,13 @@ def detect_lmstudio() -> Optional[LLMEngine]:
                         models=models,
                         info=info
                     )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.debug(f"LM Studio check failed: {e}")
     
     return None
 
 
-def detect_ollama() -> Optional[LLMEngine]:
+def detect_ollama() -> LLMEngine | None:
     """Detect Ollama"""
     ports = [11434]
     
@@ -195,13 +187,13 @@ def detect_ollama() -> Optional[LLMEngine]:
                         models=models,
                         info=data
                     )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.debug(f"Ollama check failed: {e}")
     
     return None
 
 
-def detect_llama_cpp() -> Optional[LLMEngine]:
+def detect_llama_cpp() -> LLMEngine | None:
     """Detect llama.cpp server (llama-server)"""
     ports = [8080, 8081, 8082]
     
@@ -223,7 +215,7 @@ def detect_llama_cpp() -> Optional[LLMEngine]:
                         models=models,
                         info=data
                     )
-            except:
+            except Exception:  # noqa: BLE001
                 # Try alternative endpoint
                 try:
                     resp = requests.get(f"http://localhost:{port}/models", timeout=3)
@@ -234,13 +226,13 @@ def detect_llama_cpp() -> Optional[LLMEngine]:
                             port=port,
                             status="running"
                         )
-                except:
+                except Exception:  # noqa: S110, BLE001
                     pass
     
     return None
 
 
-def find_local_gguf_models() -> List[Dict]:
+def find_local_gguf_models() -> list[dict]:
     """Find local GGUF model files"""
     gguf_models = []
     
@@ -267,13 +259,13 @@ def find_local_gguf_models() -> List[Dict]:
                     "size_mb": round(size_mb, 1),
                     "recommended": size_mb < 5000  # < 5GB considered portable
                 })
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.debug(f"Error scanning {search_path}: {e}")
     
     return sorted(gguf_models, key=lambda x: x["size_mb"], reverse=True)
 
 
-def detect_llama_cpp_direct() -> Optional[LLMEngine]:
+def detect_llama_cpp_direct() -> LLMEngine | None:
     """Detect local GGUF files for direct llama.cpp binding"""
     models = find_local_gguf_models()
     
@@ -290,7 +282,7 @@ def detect_llama_cpp_direct() -> Optional[LLMEngine]:
     return None
 
 
-def detect_text_gen_webui() -> Optional[LLMEngine]:
+def detect_text_gen_webui() -> LLMEngine | None:
     """Detect text-gen-webui"""
     ports = [5005, 5006]
     
@@ -306,7 +298,7 @@ def detect_text_gen_webui() -> Optional[LLMEngine]:
     return None
 
 
-def detect_vllm() -> Optional[LLMEngine]:
+def detect_vllm() -> LLMEngine | None:
     """Detect vLLM"""
     ports = [8000, 8001]
     
@@ -327,13 +319,13 @@ def detect_vllm() -> Optional[LLMEngine]:
                         models=models,
                         gpu_accelerated=True
                     )
-            except:
+            except Exception:  # noqa: S110, BLE001
                 pass
     
     return None
 
 
-def detect_tgi() -> Optional[LLMEngine]:
+def detect_tgi() -> LLMEngine | None:
     """Detect HuggingFace TGI"""
     ports = [8080, 3000, 3001]
     
@@ -352,7 +344,7 @@ def detect_tgi() -> Optional[LLMEngine]:
                         info=data,
                         gpu_accelerated=True
                     )
-            except:
+            except Exception:  # noqa: S110, BLE001
                 pass
     
     return None
@@ -362,7 +354,7 @@ def detect_tgi() -> Optional[LLMEngine]:
 # Main Discovery
 # ============================================================================
 
-def discover_engines() -> Dict[str, LLMEngine]:
+def discover_engines() -> dict[str, LLMEngine]:
     """Discover all available LLM engines"""
     engines = {}
     
@@ -387,13 +379,13 @@ def discover_engines() -> Dict[str, LLMEngine]:
                 result = future.result()
                 if result:
                     engines[name] = result
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.debug(f"{name} detection error: {e}")
     
     return engines
 
 
-def link_to_sllm(config_path: Optional[Path] = None) -> Dict:
+def link_to_sllm(config_path: Path | None = None) -> dict:
     """Create link configuration for SL-LLM"""
     engines = discover_engines()
     
@@ -405,7 +397,7 @@ def link_to_sllm(config_path: Optional[Path] = None) -> Dict:
         }
     
     # Prefer order based on GPU acceleration
-    preferred = []
+    preferred: list = []
     for name, engine in engines.items():
         if engine.is_available:
             if engine.gpu_accelerated:
@@ -445,10 +437,12 @@ def link_to_sllm(config_path: Optional[Path] = None) -> Dict:
 # Testing
 # ============================================================================
 
-def test_engine(engine: LLMEngine, prompt: str = "Say 'hello' in one word") -> Dict:
+def test_engine(engine: LLMEngine, prompt: str = "Say 'hello' in one word") -> dict:
     """Test an engine with a simple prompt"""
     if not engine.is_available:
         return {"error": "Engine not running"}
+    if engine.url is None:
+        return {"error": "Engine has no URL"}
     
     try:
         import requests
@@ -482,7 +476,7 @@ def test_engine(engine: LLMEngine, prompt: str = "Say 'hello' in one word") -> D
         else:
             return {"error": f"HTTP {resp.status_code}"}
             
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return {"error": str(e)}
 
 
@@ -491,10 +485,10 @@ def test_engine(engine: LLMEngine, prompt: str = "Say 'hello' in one word") -> D
 # ============================================================================
 
 import logging
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("llm-link")
 
-import argparse
 parser = argparse.ArgumentParser(description="Link with local LLM engines")
 parser.add_argument("--discover", action="store_true", help="Discover engines")
 parser.add_argument("--status", action="store_true", help="Show engine status")
@@ -518,13 +512,13 @@ if args.discover or args.status:
             if engine.models:
                 print(f"    Models: {', '.join(engine.models[:3])}")
             if engine.gpu_accelerated:
-                print(f"    GPU: Yes")
+                print("    GPU: Yes")
     else:
         print("  No engines detected")
         
     if args.test and engines:
         print("\nTesting best engine...")
-        best = list(engines.values())[0]
+        best = next(iter(engines.values()))
         result = test_engine(best)
         print(f"  Result: {result}")
 
@@ -540,6 +534,6 @@ else:
     status = {
         "gpu": gpu_type,
         "engines": list(engines.keys()),
-        "best": list(engines.values())[0].name if engines else None
+        "best": next(iter(engines.values())).name if engines else None
     }
     print(json.dumps(status, indent=2))

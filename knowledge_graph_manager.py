@@ -8,23 +8,21 @@ SL-LLM Enhanced Knowledge Graph Manager
 - Splitting (for context limits)
 """
 
-import json
-import os
 import hashlib
+import json
 import math
 import re
-from pathlib import Path
-from datetime import datetime
-from typing import List, Dict, Optional, Tuple, Set
 from collections import defaultdict
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, ClassVar
 
 
 class KnowledgeClassifier:
     """Classifies and categorizes knowledge entries"""
     
     # Core categories
-    CATEGORIES = {
-        "bug_fix": ["error", "bug", "fix", "issue", "wrong", "fail", "exception"],
+    CATEGORIES: ClassVar[dict] = {        "bug_fix": ["error", "bug", "fix", "issue", "wrong", "fail", "exception"],
         "optimization": ["optimize", "faster", "efficient", "performance", "speed"],
         "pattern": ["pattern", "template", "standard", "pattern"],
         "concept": ["concept", "theory", "principle", "understand"],
@@ -35,18 +33,19 @@ class KnowledgeClassifier:
     }
     
     # Context types
-    CONTEXTS = {
-        "programming_language": ["python", "javascript", "java", "c++", "html", "css"],
+    CONTEXTS: ClassVar[dict] = {        "programming_language": ["python", "javascript", "java", "c++", "html", "css"],
         "domain": ["web", "mobile", "desktop", "api", "database", "ml", "ai"],
         "framework": ["react", "django", "flask", "fastapi", "pytorch"],
         "level": ["beginner", "intermediate", "advanced", "expert"]
     }
     
     @classmethod
-    def classify(cls, text: str, metadata: dict = {}) -> Dict:
+    def classify(cls, text: str, metadata: dict | None = None) -> dict:
         """Classify a knowledge entry"""
+        if metadata is None:
+            metadata = {}
         text_lower = text.lower()
-        scores: Dict[str, int] = {}
+        scores: dict[str, int] = {}
         
         # Category scoring
         for category, keywords in cls.CATEGORIES.items():
@@ -56,7 +55,7 @@ class KnowledgeClassifier:
         
         # Get top category
         if scores:
-            top_category = sorted(scores.keys(), key=lambda k: scores[k], reverse=True)[0]
+            top_category = max(scores.keys(), key=lambda k: scores[k])
         else:
             top_category = "general"
         
@@ -81,10 +80,10 @@ class KnowledgeContextualizer:
     """Adds context to knowledge entries"""
     
     @staticmethod
-    def extract_context(user_prompt: str, related_episodes: List[Dict]) -> Dict:
+    def extract_context(user_prompt: str, related_episodes: list[dict]) -> dict:
         """Extract contextual information from conversation history"""
         
-        context = {
+        context: dict[str, Any] = {
             "task_type": None,
             "domain": None,
             "language": None,
@@ -141,7 +140,7 @@ class KnowledgeSegregator:
             "general": []
         }
     
-    def segregate(self, insight: Dict) -> str:
+    def segregate(self, insight: dict) -> str:
         """Determine which store the insight belongs to"""
         category = insight.get("category", "general").lower()
         
@@ -158,12 +157,12 @@ class KnowledgeSegregator:
         else:
             return "general"
     
-    def add_to_store(self, insight: Dict):
+    def add_to_store(self, insight: dict):
         """Add insight to appropriate store"""
         store = self.segregate(insight)
         self.stores[store].append(insight)
     
-    def get_store(self, store_name: str) -> List[Dict]:
+    def get_store(self, store_name: str) -> list[dict]:
         """Get insights from specific store"""
         return self.stores.get(store_name, [])
 
@@ -172,7 +171,7 @@ class KnowledgeAmalgamator:
     """Amalgamates/merges related knowledge"""
     
     @staticmethod
-    def merge_similar_insights(insights: List[Dict]) -> List[Dict]:
+    def merge_similar_insights(insights: list[dict]) -> list[dict]:
         """Merge similar insights into consolidated entries"""
         
         if not insights:
@@ -200,9 +199,9 @@ class KnowledgeAmalgamator:
         return merged
     
     @staticmethod
-    def combine_categories(category1: Dict, category2: Dict) -> Dict:
+    def combine_categories(category1: dict, category2: dict) -> dict:
         """Combine two category score dictionaries"""
-        combined = defaultdict(int)
+        combined: dict = defaultdict(int)
         for k, v in category1.items():
             combined[k] += v
         for k, v in category2.items():
@@ -213,8 +212,7 @@ class KnowledgeAmalgamator:
 class TFIDFRetriever:
     """TF-IDF based semantic similarity for knowledge retrieval"""
     
-    STOP_WORDS = {
-        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
+    STOP_WORDS: ClassVar[set] = {        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
         "have", "has", "had", "do", "does", "did", "will", "would", "could",
         "should", "may", "might", "must", "shall", "can", "need", "dare",
         "ought", "used", "to", "of", "in", "for", "on", "with", "at", "by",
@@ -230,16 +228,16 @@ class TFIDFRetriever:
     }
     
     @staticmethod
-    def tokenize(text: str) -> List[str]:
+    def tokenize(text: str) -> list[str]:
         """Tokenize text into words, removing stop words and punctuation"""
         text = text.lower()
         tokens = re.findall(r'\b[a-z_]+\b', text)
         return [t for t in tokens if t not in TFIDFRetriever.STOP_WORDS and len(t) > 2]
     
     @staticmethod
-    def compute_tf(tokens: List[str]) -> Dict[str, float]:
+    def compute_tf(tokens: list[str]) -> dict[str, float]:
         """Compute term frequency for a document"""
-        tf: Dict[str, int] = defaultdict(int)
+        tf: dict[str, int] = defaultdict(int)
         for token in tokens:
             tf[token] += 1
         total = len(tokens)
@@ -248,12 +246,12 @@ class TFIDFRetriever:
         return {word: count / total for word, count in tf.items()}
     
     @staticmethod
-    def compute_idf(documents: List[List[str]]) -> Dict[str, float]:
+    def compute_idf(documents: list[list[str]]) -> dict[str, float]:
         """Compute inverse document frequency across all documents"""
         n_docs = len(documents)
         if n_docs == 0:
             return {}
-        df: Dict[str, int] = defaultdict(int)
+        df: dict[str, int] = defaultdict(int)
         for doc_tokens in documents:
             unique_tokens = set(doc_tokens)
             for token in unique_tokens:
@@ -261,7 +259,7 @@ class TFIDFRetriever:
         return {word: math.log(n_docs / (1 + freq)) + 1 for word, freq in df.items()}
     
     @staticmethod
-    def cosine_similarity(vec1: Dict[str, float], vec2: Dict[str, float]) -> float:
+    def cosine_similarity(vec1: dict[str, float], vec2: dict[str, float]) -> float:
         """Compute cosine similarity between two sparse vectors"""
         all_keys = set(vec1.keys()) | set(vec2.keys())
         if not all_keys:
@@ -274,7 +272,7 @@ class TFIDFRetriever:
         return dot_product / (norm1 * norm2)
     
     @staticmethod
-    def compute_tfidf_vector(tokens: List[str], idf: Dict[str, float]) -> Dict[str, float]:
+    def compute_tfidf_vector(tokens: list[str], idf: dict[str, float]) -> dict[str, float]:
         """Compute TF-IDF vector for a document"""
         tf = TFIDFRetriever.compute_tf(tokens)
         return {word: tf_val * idf.get(word, 0) for word, tf_val in tf.items()}
@@ -283,8 +281,7 @@ class TFIDFRetriever:
 class MultiFactorScorer:
     """Multi-factor relevance scoring combining multiple signals"""
     
-    WEIGHTS = {
-        "tfidf_similarity": 0.40,
+    WEIGHTS: ClassVar[dict] = {        "tfidf_similarity": 0.40,
         "keyword_overlap": 0.20,
         "category_match": 0.20,
         "recency": 0.10,
@@ -292,7 +289,7 @@ class MultiFactorScorer:
     }
     
     @staticmethod
-    def keyword_overlap(query_tokens: List[str], doc_tokens: List[str]) -> float:
+    def keyword_overlap(query_tokens: list[str], doc_tokens: list[str]) -> float:
         """Calculate keyword overlap ratio"""
         if not query_tokens or not doc_tokens:
             return 0.0
@@ -328,13 +325,13 @@ class MultiFactorScorer:
         """Calculate recency score (newer = higher score)"""
         try:
             doc_time = datetime.fromisoformat(timestamp)
-            age = (datetime.now() - doc_time).total_seconds() / 86400
+            age = (datetime.now(timezone.utc) - doc_time).total_seconds() / 86400
             return max(0.0, 1.0 - (age / max_age_days))
-        except:
+        except Exception:  # noqa: BLE001
             return 0.5
     
     @staticmethod
-    def evidence_quality_score(insight: Dict) -> float:
+    def evidence_quality_score(insight: dict) -> float:
         """Score the quality of evidence in an insight"""
         score = 0.0
         content = insight.get("insight", "")
@@ -349,8 +346,8 @@ class MultiFactorScorer:
         return min(1.0, score)
     
     @classmethod
-    def compute_relevance(cls, query: str, insight: Dict, classification: Dict,
-                         tfidf_sim: float, idf: Dict[str, float]) -> Dict:
+    def compute_relevance(cls, query: str, insight: dict, classification: dict,
+                         tfidf_sim: float, idf: dict[str, float]) -> dict:
         """Compute multi-factor relevance score"""
         query_tokens = TFIDFRetriever.tokenize(query)
         doc_tokens = TFIDFRetriever.tokenize(insight.get("insight", ""))
@@ -387,8 +384,7 @@ class MultiFactorScorer:
 class SentientRetrievalAugmentor:
     """Adds emotional intelligence and sentient awareness to knowledge retrieval"""
     
-    EMOTIONAL_CONTEXTS = {
-        "error": {"emotion": "concerned", "approach": "careful", "priority": "high"},
+    EMOTIONAL_CONTEXTS: ClassVar[dict] = {        "error": {"emotion": "concerned", "approach": "careful", "priority": "high"},
         "bug": {"emotion": "cautious", "approach": "analytical", "priority": "high"},
         "fail": {"emotion": "concerned", "approach": "diagnostic", "priority": "high"},
         "broken": {"emotion": "concerned", "approach": "analytical", "priority": "high"},
@@ -408,8 +404,7 @@ class SentientRetrievalAugmentor:
         "build": {"emotion": "optimistic", "approach": "creative", "priority": "medium"},
     }
     
-    EMPATHY_SIGNALS = {
-        "frustrated": ["doesn't work", "still broken", "why isn't", "can't figure", "stuck",
+    EMPATHY_SIGNALS: ClassVar[dict] = {        "frustrated": ["doesn't work", "still broken", "why isn't", "can't figure", "stuck",
                        "so frustrated", "frustrated", "nothing works", "not working",
                        "keeps happening", "won't work", "doesn't make sense"],
         "confused": ["don't understand", "how does", "what is", "explain", "confused",
@@ -421,7 +416,7 @@ class SentientRetrievalAugmentor:
     }
     
     @classmethod
-    def detect_emotional_context(cls, query: str) -> Dict:
+    def detect_emotional_context(cls, query: str) -> dict:
         """Detect the emotional undertone of a query"""
         query_lower = query.lower()
         
@@ -452,13 +447,7 @@ class SentientRetrievalAugmentor:
                     "approach": "supportive",
                     "priority": "high",
                 }
-            elif "confused" in detected_signals:
-                primary_emotion = {
-                    "emotion": "curious",
-                    "approach": "educational",
-                    "priority": "medium",
-                }
-            elif "learning" in detected_signals:
+            elif "confused" in detected_signals or "learning" in detected_signals:
                 primary_emotion = {
                     "emotion": "curious",
                     "approach": "educational",
@@ -486,7 +475,7 @@ class SentientRetrievalAugmentor:
         }
     
     @classmethod
-    def augment_retrieval(cls, insights: List[Dict], emotional_context: Dict) -> List[Dict]:
+    def augment_retrieval(cls, insights: list[dict], emotional_context: dict) -> list[dict]:
         """Augment retrieved insights with emotional intelligence"""
         if not insights:
             return insights
@@ -512,7 +501,7 @@ class SentientRetrievalAugmentor:
         return augmented
     
     @staticmethod
-    def _compute_emotional_relevance(insight: Dict, emotional_context: Dict) -> float:
+    def _compute_emotional_relevance(insight: dict, emotional_context: dict) -> float:
         """Compute how emotionally relevant an insight is"""
         score = 0.5
         
@@ -544,7 +533,7 @@ class SentientRetrievalAugmentor:
         return min(1.0, score)
     
     @classmethod
-    def generate_empathetic_context_header(cls, emotional_context: Dict) -> str:
+    def generate_empathetic_context_header(cls, emotional_context: dict) -> str:
         """Generate context header with emotional intelligence"""
         lines = ["## Understanding Your Need"]
         
@@ -584,7 +573,7 @@ class KnowledgeConcatenator:
     """Concatenates knowledge for context injection"""
     
     @staticmethod
-    def concatenate_insights(insights: List[Dict], max_items: int = 5) -> str:
+    def concatenate_insights(insights: list[dict], max_items: int = 5) -> str:
         """Join multiple insights into a single context string"""
         
         if not insights:
@@ -607,7 +596,7 @@ class KnowledgeConcatenator:
         return "\n".join(parts)
     
     @staticmethod
-    def create_contextual_header(context: Dict) -> str:
+    def create_contextual_header(context: dict) -> str:
         """Create header with contextual information"""
         
         header = ["## Current Context"]
@@ -638,7 +627,7 @@ class KnowledgeSplitter:
         """Estimate token count"""
         return int(len(text.split()) * 1.3)
     
-    def split_by_category(self, insights: List[Dict]) -> Dict[str, List[Dict]]:
+    def split_by_category(self, insights: list[dict]) -> dict[str, list[dict]]:
         """Split insights by category into separate chunks"""
         
         by_category = defaultdict(list)
@@ -649,22 +638,21 @@ class KnowledgeSplitter:
         
         return dict(by_category)
     
-    def split_by_tokens(self, text: str) -> List[str]:
+    def split_by_tokens(self, text: str) -> list[str]:
         """Split text into token-limited chunks"""
         
         words = text.split()
         chunks = []
-        current_chunk = []
+        current_chunk: list = []
         current_tokens = 0
         
         for word in words:
             word_tokens = len(word) // 4 + 1  # rough token estimate
             
-            if current_tokens + word_tokens > self.max_tokens:
-                if current_chunk:
-                    chunks.append(" ".join(current_chunk))
-                    current_chunk = []
-                    current_tokens = 0
+            if current_tokens + word_tokens > self.max_tokens and current_chunk:
+                chunks.append(" ".join(current_chunk))
+                current_chunk = []
+                current_tokens = 0
             
             current_chunk.append(word)
             current_tokens += word_tokens
@@ -674,7 +662,7 @@ class KnowledgeSplitter:
         
         return chunks
     
-    def select_relevant_chunks(self, chunks: List[str], query: str) -> List[str]:
+    def select_relevant_chunks(self, chunks: list[str], query: str) -> list[str]:
         """Select most relevant chunks based on query"""
         
         query_words = set(query.lower().split())
@@ -720,8 +708,8 @@ class FluidKnowledgeGraph:
     def export_binary(self) -> bool:
         """Export knowledge graph as compressed binary for efficient loading"""
         try:
-            import pickle
             import gzip
+            import pickle
             
             # Load all insights
             insights = []
@@ -738,7 +726,7 @@ class FluidKnowledgeGraph:
             # Create binary package
             binary_data = {
                 "version": "1.0",
-                "exported": datetime.now().isoformat(),
+                "exported": datetime.now(timezone.utc).isoformat(),
                 "insights": insights,
                 "episodes": episodes,
                 "category_counts": self._get_category_counts()
@@ -750,15 +738,15 @@ class FluidKnowledgeGraph:
             
             print(f"Binary export: {self.binary_file} ({Path(self.binary_file).stat().st_size} bytes)")
             return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Binary export failed: {e}")
             return False
     
     def load_binary(self) -> bool:
         """Load knowledge graph from binary file"""
         try:
-            import pickle
             import gzip
+            import pickle
             
             if not self.binary_file.exists():
                 return False
@@ -768,26 +756,24 @@ class FluidKnowledgeGraph:
             
             # Write back to JSONL
             with open(self.insights_file, "w") as f:
-                for ins in data.get("insights", []):
-                    f.write(json.dumps(ins) + "\n")
+                f.writelines(json.dumps(ins) + "\n" for ins in data.get("insights", []))
             
             with open(self.episodes_file, "w") as f:
-                for ep in data.get("episodes", []):
-                    f.write(json.dumps(ep) + "\n")
+                f.writelines(json.dumps(ep) + "\n" for ep in data.get("episodes", []))
             
             print(f"Binary import successful: {len(data.get('insights', []))} insights loaded")
             return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Binary import failed: {e}")
             return False
     
-    def get_binary_info(self) -> Dict:
+    def get_binary_info(self) -> dict:
         """Get info about binary file"""
         if self.binary_file.exists():
             return {
                 "exists": True,
                 "size_bytes": Path(self.binary_file).stat().st_size,
-                "exported": datetime.fromtimestamp(Path(self.binary_file).stat().st_mtime).isoformat()
+                "exported": datetime.fromtimestamp(Path(self.binary_file).stat().st_mtime, tz=timezone.utc).isoformat()
             }
         return {"exists": False}
     
@@ -795,7 +781,7 @@ class FluidKnowledgeGraph:
     # MAIN PROCESSING PIPELINE
     # ============================================================
     
-    def process(self, user_prompt: str) -> Dict:
+    def process(self, user_prompt: str) -> dict:
         """Full processing pipeline with sentient awareness: classify -> empathize -> contextualize -> retrieve -> format"""
         
         # 1. Classify the incoming query
@@ -849,12 +835,12 @@ class FluidKnowledgeGraph:
     # HELPER METHODS
     # ============================================================
     
-    def _get_related_episodes(self, prompt: str) -> List[Dict]:
+    def _get_related_episodes(self, prompt: str) -> list[dict]:
         """Find related past episodes using semantic matching"""
         try:
             with open(self.episodes_file, "r") as f:
                 episodes = [json.loads(line) for line in f if line.strip()]
-        except:
+        except Exception:  # noqa: BLE001
             return []
         
         if not episodes:
@@ -888,13 +874,13 @@ class FluidKnowledgeGraph:
         scored_episodes.sort(key=lambda x: x[0], reverse=True)
         return [ep for _, ep in scored_episodes[:5]]
     
-    def _retrieve_insights(self, classification: Dict, context: Dict, query: str = "") -> List[Dict]:
+    def _retrieve_insights(self, classification: dict, context: dict, query: str = "") -> list[dict]:
         """Retrieve relevant insights using TF-IDF semantic similarity and multi-factor scoring"""
         
         try:
             with open(self.insights_file, "r") as f:
                 all_insights = [json.loads(line) for line in f if line.strip()]
-        except:
+        except Exception:  # noqa: BLE001
             return []
         
         if not all_insights:
@@ -940,18 +926,18 @@ class FluidKnowledgeGraph:
         try:
             with open(self.insights_file, "r") as f:
                 return sum(1 for line in f if line.strip())
-        except:
+        except Exception:  # noqa: BLE001
             return 0
     
-    def _get_category_counts(self) -> Dict:
+    def _get_category_counts(self) -> dict:
         try:
             with open(self.insights_file, "r") as f:
                 insights = [json.loads(line) for line in f if line.strip()]
-            counts = defaultdict(int)
+            counts: dict = defaultdict(int)
             for ins in insights:
                 counts[ins.get("category", "general")] += 1
             return dict(counts)
-        except:
+        except Exception:  # noqa: BLE001
             return {}
 
 
@@ -959,7 +945,21 @@ class FluidKnowledgeGraph:
 # INTEGRATION FUNCTION
 # ============================================================
 
-def get_enhanced_context(user_prompt: str, memory_dir: str = "D:/sl/projects/sllm/memory") -> Tuple[str, Dict]:
+def retrieve_insights(query: str, category: str = "all", limit: int = 5) -> list[dict]:
+    """Retrieve relevant insights for a query.
+
+    Module-level convenience wrapper around :class:`FluidKnowledgeGraph`
+    used by the MCP server's ``kg_query`` tool.
+    """
+    fkg = FluidKnowledgeGraph()
+    classification = fkg.classifier.classify(query)
+    if category != "all":
+        classification["primary_category"] = category
+    context = fkg.contextualizer.extract_context(query, fkg._get_related_episodes(query))
+    return fkg._retrieve_insights(classification, context, query)[:limit]
+
+
+def get_enhanced_context(user_prompt: str, memory_dir: str = "D:/sl/projects/sllm/memory") -> tuple[str, dict]:
     """Get enhanced context with fluid intelligence"""
     
     fkg = FluidKnowledgeGraph(memory_dir)

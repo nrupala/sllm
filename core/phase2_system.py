@@ -5,19 +5,18 @@ SL-LLM Phase 2: Parallel Execution, Web Access, Enhanced Hallucination Preventio
 - Enhanced hallucination prevention with citations
 """
 
-import json
-import os
-import time
 import hashlib
+import json
 import threading
-import queue
-from pathlib import Path
-from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Callable, Any
-from dataclasses import dataclass, field
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
+import uuid
 from collections import defaultdict
-
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
 
 # ============================================================
 # PARALLEL TASK EXECUTION
@@ -28,9 +27,9 @@ class TaskResult:
     task_id: str
     status: str  # pending, running, completed, failed, cancelled
     result: Any = None
-    error: str = None
-    started_at: str = None
-    completed_at: str = None
+    error: str | None = None
+    started_at: str | None = None
+    completed_at: str | None = None
     duration: float = 0.0
 
 
@@ -40,8 +39,8 @@ class ParallelTaskExecutor:
     def __init__(self, max_workers: int = 4):
         self.max_workers = max_workers
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
-        self.task_queue: Dict[str, TaskResult] = {}
-        self.results: Dict[str, TaskResult] = {}
+        self.task_queue: dict[str, TaskResult] = {}
+        self.results: dict[str, TaskResult] = {}
         self._lock = threading.Lock()
     
     def submit(self, task_id: str, fn: Callable, *args, **kwargs) -> str:
@@ -50,7 +49,7 @@ class ParallelTaskExecutor:
             task = TaskResult(
                 task_id=task_id,
                 status="pending",
-                started_at=datetime.now().isoformat(),
+                started_at=datetime.now(timezone.utc).isoformat(),
             )
             self.task_queue[task_id] = task
         
@@ -59,7 +58,7 @@ class ParallelTaskExecutor:
         
         return task_id
     
-    def submit_batch(self, tasks: List[Dict]) -> List[str]:
+    def submit_batch(self, tasks: list[dict]) -> list[str]:
         """Submit multiple tasks at once"""
         task_ids = []
         for task in tasks:
@@ -71,7 +70,7 @@ class ParallelTaskExecutor:
             task_ids.append(task_id)
         return task_ids
     
-    def wait_for(self, task_id: str, timeout: float = None) -> TaskResult:
+    def wait_for(self, task_id: str, timeout: float | None = None) -> TaskResult:
         """Wait for a specific task to complete"""
         start = time.time()
         while True:
@@ -83,7 +82,7 @@ class ParallelTaskExecutor:
                 return TaskResult(task_id=task_id, status="timeout", error="Timeout")
             time.sleep(0.1)
     
-    def wait_for_all(self, task_ids: List[str], timeout: float = None) -> Dict[str, TaskResult]:
+    def wait_for_all(self, task_ids: list[str], timeout: float | None = None) -> dict[str, TaskResult]:
         """Wait for all tasks to complete"""
         results = {}
         start = time.time()
@@ -108,17 +107,17 @@ class ParallelTaskExecutor:
             
             time.sleep(0.1)
     
-    def get_status(self, task_id: str) -> Optional[TaskResult]:
+    def get_status(self, task_id: str) -> TaskResult | None:
         """Get status of a task"""
         with self._lock:
             return self.results.get(task_id) or self.task_queue.get(task_id)
     
-    def get_all_status(self) -> Dict:
+    def get_all_status(self) -> dict:
         """Get status of all tasks"""
         with self._lock:
             all_tasks = {**self.task_queue, **self.results}
         
-        status_counts = defaultdict(int)
+        status_counts: dict = defaultdict(int)
         for task in all_tasks.values():
             status_counts[task.status] += 1
         
@@ -147,11 +146,7 @@ class ParallelTaskExecutor:
         with self._lock:
             self.task_queue[task_id].status = "running"
         
-        try:
-            result = fn(*args, **kwargs)
-            return result
-        except Exception as e:
-            raise e
+        return fn(*args, **kwargs)
     
     def _on_complete(self, task_id: str, future):
         """Handle task completion"""
@@ -161,15 +156,16 @@ class ParallelTaskExecutor:
                 task = self.task_queue[task_id]
                 task.status = "completed"
                 task.result = result
-                task.completed_at = datetime.now().isoformat()
-                task.duration = (datetime.fromisoformat(task.completed_at) - datetime.fromisoformat(task.started_at)).total_seconds()
+                task.completed_at = datetime.now(timezone.utc).isoformat()
+                if task.started_at:
+                    task.duration = (datetime.fromisoformat(task.completed_at) - datetime.fromisoformat(task.started_at)).total_seconds()
                 self.results[task_id] = task
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             with self._lock:
                 task = self.task_queue[task_id]
                 task.status = "failed"
                 task.error = str(e)
-                task.completed_at = datetime.now().isoformat()
+                task.completed_at = datetime.now(timezone.utc).isoformat()
                 self.results[task_id] = task
 
 
@@ -184,7 +180,7 @@ class WebCache:
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.index_file = self.cache_dir / "cache_index.json"
-        self.index: Dict[str, Dict] = {}
+        self.index: dict[str, dict] = {}
         self._load_index()
     
     def _load_index(self):
@@ -192,7 +188,7 @@ class WebCache:
             try:
                 with open(self.index_file, "r") as f:
                     self.index = json.load(f)
-            except:
+            except Exception:  # noqa: BLE001
                 self.index = {}
     
     def _save_index(self):
@@ -202,7 +198,7 @@ class WebCache:
     def _url_hash(self, url: str) -> str:
         return hashlib.md5(url.encode()).hexdigest()[:12]
     
-    def get(self, url: str, max_age_hours: float = 24.0) -> Optional[Dict]:
+    def get(self, url: str, max_age_hours: float = 24.0) -> dict | None:
         """Get cached content if available and not expired"""
         cache_key = self._url_hash(url)
         entry = self.index.get(cache_key)
@@ -211,7 +207,7 @@ class WebCache:
             return None
         
         cached_at = datetime.fromisoformat(entry["cached_at"])
-        age = (datetime.now() - cached_at).total_seconds() / 3600
+        age = (datetime.now(timezone.utc) - cached_at).total_seconds() / 3600
         
         if age > max_age_hours:
             return None
@@ -223,7 +219,7 @@ class WebCache:
         
         return None
     
-    def put(self, url: str, content: Dict, metadata: Dict = None):
+    def put(self, url: str, content: dict, metadata: dict | None = None):
         """Cache web content"""
         cache_key = self._url_hash(url)
         cache_file = self.cache_dir / f"{cache_key}.json"
@@ -232,7 +228,7 @@ class WebCache:
             "url": url,
             "content": content,
             "metadata": metadata or {},
-            "cached_at": datetime.now().isoformat(),
+            "cached_at": datetime.now(timezone.utc).isoformat(),
         }
         
         with open(cache_file, "w") as f:
@@ -250,7 +246,7 @@ class WebCache:
         expired = []
         for key, entry in self.index.items():
             cached_at = datetime.fromisoformat(entry["cached_at"])
-            age = (datetime.now() - cached_at).total_seconds() / 3600
+            age = (datetime.now(timezone.utc) - cached_at).total_seconds() / 3600
             if age > max_age_hours:
                 expired.append(key)
         
@@ -265,7 +261,7 @@ class WebCache:
         
         return len(expired)
     
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         total_size = sum(e.get("size", 0) for e in self.index.values())
         return {
             "entries": len(self.index),
@@ -277,11 +273,11 @@ class WebCache:
 class OfflineFirstWebAccess:
     """Web access that prefers local cache, falls back to live fetch"""
     
-    def __init__(self, cache: WebCache = None, fetch_fn: Callable = None):
+    def __init__(self, cache: WebCache | None = None, fetch_fn: Callable | None = None):
         self.cache = cache or WebCache()
         self.fetch_fn = fetch_fn  # External fetch function (set when online)
         self.offline_mode = True  # Default to offline
-        self.request_log: List[Dict] = []
+        self.request_log: list[dict] = []
     
     def set_online(self, fetch_fn: Callable):
         """Enable online mode with fetch function"""
@@ -292,7 +288,7 @@ class OfflineFirstWebAccess:
         """Force offline mode"""
         self.offline_mode = True
     
-    def fetch(self, url: str, max_age_hours: float = 24.0, force_refresh: bool = False) -> Dict:
+    def fetch(self, url: str, max_age_hours: float = 24.0, force_refresh: bool = False) -> dict:
         """Fetch content: cache first, then live if online"""
         # Check cache first
         if not force_refresh:
@@ -301,7 +297,7 @@ class OfflineFirstWebAccess:
                 self.request_log.append({
                     "url": url,
                     "source": "cache",
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                 })
                 return {"source": "cache", "content": cached.get("content"), "cached_at": cached.get("cached_at")}
         
@@ -313,21 +309,21 @@ class OfflineFirstWebAccess:
                 self.request_log.append({
                     "url": url,
                     "source": "live",
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                 })
                 return {"source": "live", "content": content}
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 return {"source": "error", "error": str(e)}
         
         # Offline with no cache
         self.request_log.append({
             "url": url,
             "source": "offline_no_cache",
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         return {"source": "offline", "error": "No cached content available and offline mode active"}
     
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         return {
             "offline_mode": self.offline_mode,
             "cache": self.cache.get_stats(),
@@ -344,8 +340,8 @@ class CitationTracker:
     """Track citations for all claims in output"""
     
     def __init__(self):
-        self.citations: List[Dict] = []
-        self.uncited_claims: List[str] = []
+        self.citations: list[dict] = []
+        self.uncited_claims: list[str] = []
     
     def add_citation(self, claim: str, source: str, confidence: float):
         """Add a citation for a claim"""
@@ -353,7 +349,7 @@ class CitationTracker:
             "claim": claim,
             "source": source,
             "confidence": confidence,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
     
     def add_uncited_claim(self, claim: str):
@@ -367,7 +363,7 @@ class CitationTracker:
             return 1.0
         return len(self.citations) / total
     
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         return {
             "total_citations": len(self.citations),
             "uncited_claims": len(self.uncited_claims),
@@ -379,11 +375,11 @@ class CitationTracker:
 class EnhancedHallucinationPrevention:
     """Enhanced hallucination prevention with citations and external validation"""
     
-    def __init__(self, citation_tracker: CitationTracker = None):
+    def __init__(self, citation_tracker: CitationTracker | None = None):
         self.citation_tracker = citation_tracker or CitationTracker()
-        self.validation_log: List[Dict] = []
+        self.validation_log: list[dict] = []
     
-    def validate_with_citations(self, output: str, knowledge: List[Dict]) -> Dict:
+    def validate_with_citations(self, output: str, knowledge: list[dict]) -> dict:
         """Validate output and add citations where possible"""
         sentences = output.split(". ")
         validated_sentences = []
@@ -419,7 +415,7 @@ class EnhancedHallucinationPrevention:
         }
         
         self.validation_log.append({
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "citation_rate": result["citation_rate"],
             "uncited_claims": result["uncited_claims"],
         })
@@ -444,7 +440,7 @@ class EnhancedHallucinationPrevention:
         
         return False
     
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         return {
             "citation_tracker": self.citation_tracker.get_status(),
             "validation_log_count": len(self.validation_log),
@@ -464,20 +460,20 @@ class Phase2System:
         self.web_access = OfflineFirstWebAccess()
         self.hallucination_prevention = EnhancedHallucinationPrevention()
     
-    def execute_parallel(self, tasks: List[Dict]) -> Dict[str, TaskResult]:
+    def execute_parallel(self, tasks: list[dict]) -> dict[str, TaskResult]:
         """Execute multiple tasks in parallel"""
         task_ids = self.executor.submit_batch(tasks)
         return self.executor.wait_for_all(task_ids)
     
-    def fetch_with_cache(self, url: str, force_refresh: bool = False) -> Dict:
+    def fetch_with_cache(self, url: str, force_refresh: bool = False) -> dict:
         """Fetch content with offline-first caching"""
         return self.web_access.fetch(url, force_refresh=force_refresh)
     
-    def validate_with_citations(self, output: str, knowledge: List[Dict]) -> Dict:
+    def validate_with_citations(self, output: str, knowledge: list[dict]) -> dict:
         """Validate output with citation tracking"""
         return self.hallucination_prevention.validate_with_citations(output, knowledge)
     
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         return {
             "parallel_executor": self.executor.get_all_status(),
             "web_access": self.web_access.get_status(),

@@ -26,17 +26,13 @@ WebSocket:
 """
 
 import argparse
-import asyncio
 import json
 import logging
-import os
 import sys
 import uuid
-from datetime import datetime
-from pathlib import Path
-from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, field
-from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
+from pathlib import Path
 
 # Configure logging
 logging.basicConfig(
@@ -48,21 +44,19 @@ logger = logging.getLogger("sllm-daemon")
 # Try to import HTTP server libraries
 try:
     import uvicorn
-    from fastapi import FastAPI, HTTPException, Web, WebSocket, WebSocketDisconnect
-    from fastapi.responses import JSONResponse
+    from fastapi import FastAPI
     FASTAPI_AVAILABLE = True
 except ImportError:
     logger.warning("fastapi/uvicorn not available - using basic HTTP server")
     FASTAPI_AVAILABLE = False
-    from http.server import HTTPServer, BaseHTTPRequestHandler
+    from http.server import BaseHTTPRequestHandler, HTTPServer
     from socketserver import ThreadingMixIn
 
 # Import SL-LLM core
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from core.client import get_client, detect_gpu, GPU_INFO
-from tools.builtin import get_default_tools, execute_tool
+from core.client import GPU_INFO, get_client
 from knowledge_graph_manager import FluidKnowledgeGraph, get_enhanced_context
-
+from tools.builtin import execute_tool, get_default_tools
 
 # ============================================================================
 # Configuration
@@ -76,16 +70,16 @@ class DaemonConfig:
     prefer: str = "auto"  # lmstudio, ollama, llama.cpp, mock
     model: str = "local"
     cors_enabled: bool = True
-    api_key: Optional[str] = None  # Optional API key
+    api_key: str | None = None  # Optional API key
     max_concurrent: int = 4
     timeout: int = 300
     
     # Security
-    allowed_actions: List[str] = field(default_factory=lambda: [
+    allowed_actions: list[str] = field(default_factory=lambda: [
         "file_read", "file_write", "list_directory", "execute_code",
         "search_code", "get_system_info", "git_operations"
     ])
-    blocked_patterns: List[str] = field(default_factory=lambda: [
+    blocked_patterns: list[str] = field(default_factory=lambda: [
         r"rm\s+-rf", r"mkfs", r">\s*/dev/sd", r"curl.*\|.*bash"
     ])
 
@@ -99,9 +93,9 @@ class ActionValidator:
     
     def __init__(self, config: DaemonConfig):
         self.config = config
-        self.action_counts: Dict[str, int] = {}
+        self.action_counts: dict[str, int] = {}
         
-    def validate(self, action: str, args: Dict) -> tuple[bool, str]:
+    def validate(self, action: str, args: dict) -> tuple[bool, str]:
         """Returns (allowed, reason)"""
         # Check action whitelist
         if action not in self.config.allowed_actions:
@@ -133,9 +127,9 @@ class SecureExecutor:
     
     def __init__(self, action_validator: ActionValidator):
         self.validator = action_validator
-        self.execution_log: List[Dict] = []
+        self.execution_log: list[dict] = []
         
-    def execute(self, action: str, args: Dict) -> str:
+    def execute(self, action: str, args: dict) -> str:
         """Execute with validation"""
         allowed, reason = self.validator.validate(action, args)
         if not allowed:
@@ -147,7 +141,7 @@ class SecureExecutor:
             
             # Log execution
             self.execution_log.append({
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "action": action,
                 "args_keys": list(args.keys()),
                 "result_len": len(result)
@@ -159,7 +153,7 @@ class SecureExecutor:
                 
             return result
             
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Execution error: {e}")
             return json.dumps({"error": str(e)})
 
@@ -187,9 +181,9 @@ class SLLMCore:
         self.executor = SecureExecutor(self.action_validator)
         
         # Session state
-        self.sessions: Dict[str, Dict] = {}
+        self.sessions: dict[str, dict] = {}
         
-    def chat(self, messages: List[Dict], session_id: Optional[str] = None) -> Dict:
+    def chat(self, messages: list[dict], session_id: str | None = None) -> dict:
         """Process chat with full SL-LLM pipeline"""
         
         # Get last user message
@@ -211,7 +205,7 @@ class SLLMCore:
                 [{"role": "user", "content": full_prompt}],
                 tools=self.tools
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {"error": str(e)}
         
         msg = response.get("message", {})
@@ -224,7 +218,7 @@ class SLLMCore:
                 tool_name = call["function"]["name"]
                 try:
                     args = json.loads(call["function"]["arguments"])
-                except:
+                except Exception:  # noqa: BLE001
                     args = {"code": call["function"]["arguments"]}
                 
                 result = self.executor.execute(tool_name, args)
@@ -237,7 +231,7 @@ class SLLMCore:
                         tools=self.tools
                     )
                     msg = response.get("message", {})
-                except:
+                except Exception:  # noqa: S110, BLE001
                     pass
             
             content = msg.get("content", "")
@@ -250,7 +244,7 @@ class SLLMCore:
             "session_id": session_id
         }
     
-    def execute_task(self, task: str, session_id: Optional[str] = None) -> Dict:
+    def execute_task(self, task: str, session_id: str | None = None) -> dict:
         """Execute a task with full SL-LLM"""
         messages = [{"role": "user", "content": task}]
         return self.chat(messages, session_id)
@@ -259,13 +253,13 @@ class SLLMCore:
         """Create new session"""
         session_id = str(uuid.uuid4())[:8]
         self.sessions[session_id] = {
-            "created": datetime.now().isoformat(),
+            "created": datetime.now(timezone.utc).isoformat(),
             "messages": [],
             "context": {}
         }
         return session_id
     
-    def get_tools(self) -> List[Dict]:
+    def get_tools(self) -> list[dict]:
         """Get available tools for MCP"""
         return self.tools
 
@@ -280,7 +274,7 @@ class SLLMDaemon:
     def __init__(self, config: DaemonConfig):
         self.config = config
         self.core = SLLMCore(config)
-        self.started = datetime.now()
+        self.started = datetime.now(timezone.utc)
         
         if FASTAPI_AVAILABLE:
             self.app = FastAPI(
@@ -312,7 +306,7 @@ class SLLMDaemon:
             """Health check"""
             return {
                 "status": "healthy",
-                "uptime": (datetime.now() - self.started).total_seconds(),
+                "uptime": (datetime.now(timezone.utc) - self.started).total_seconds(),
                 "gpu": GPU_INFO[0],
                 "llm_backend": self.config.prefer,
                 "sessions": len(self.core.sessions)
@@ -347,7 +341,7 @@ class SLLMDaemon:
             return {
                 "id": f"chatcmpl-{uuid.uuid4().hex[:8]}",
                 "object": "chat.completion",
-                "created": int(datetime.now().timestamp()),
+                "created": int(datetime.now(timezone.utc).timestamp()),
                 "model": self.config.model,
                 "choices": [{
                     "index": 0,
@@ -375,7 +369,7 @@ class SLLMDaemon:
             return {
                 "id": f"cmpl-{uuid.uuid4().hex[:8]}",
                 "object": "text_completion",
-                "created": int(datetime.now().timestamp()),
+                "created": int(datetime.now(timezone.utc).timestamp()),
                 "model": self.config.model,
                 "choices": [{
                     "text": result.get("content", ""),
@@ -463,13 +457,13 @@ class BasicHandler(BaseHTTPRequestHandler):
         
         if self.path == "/execute":
             try:
-                data = json.loads(body)
+                json.loads(body)
                 result = {"status": "ok", "output": "Basic server - use FastAPI for full features"}
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
                 self.wfile.write(json.dumps(result).encode())
-            except:
+            except Exception:  # noqa: BLE001
                 self.send_response(500)
                 self.end_headers()
 

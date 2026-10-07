@@ -1,6 +1,7 @@
 """Token Bucket Rate Limiter"""
-import time
 import threading
+import time
+
 
 class RateLimiter:
     def __init__(self, rate=10, per=1.0):

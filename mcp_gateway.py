@@ -3,11 +3,8 @@ SL-LLM MCP Gateway Integration
 Provides MCP protocol endpoints for external tool integration
 """
 
-import json
-import asyncio
-from typing import Dict, List, Any, Optional
-from pathlib import Path
 import logging
+from typing import Any
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -15,12 +12,12 @@ logger = logging.getLogger(__name__)
 
 class MCPTool:
     """Represents an MCP tool"""
-    def __init__(self, name: str, description: str, input_schema: Dict):
+    def __init__(self, name: str, description: str, input_schema: dict):
         self.name = name
         self.description = description
         self.input_schema = input_schema
     
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "name": self.name,
             "description": self.description,
@@ -35,7 +32,7 @@ class MCPGateway:
     """
     
     def __init__(self):
-        self.tools: Dict[str, MCPTool] = {}
+        self.tools: dict[str, MCPTool] = {}
         self._register_all_tools()
     
     def _register_all_tools(self):
@@ -233,15 +230,15 @@ class MCPGateway:
         """Register a tool"""
         self.tools[tool.name] = tool
     
-    def list_tools(self) -> List[Dict]:
+    def list_tools(self) -> list[dict]:
         """List all available tools"""
         return [t.to_dict() for t in self.tools.values()]
     
-    def get_tool(self, name: str) -> Optional[MCPTool]:
+    def get_tool(self, name: str) -> MCPTool | None:
         """Get a specific tool"""
         return self.tools.get(name)
     
-    async def execute_tool(self, name: str, arguments: Dict) -> Dict:
+    async def execute_tool(self, name: str, arguments: dict) -> dict:
         """Execute a tool"""
         tool = self.get_tool(name)
         if not tool:
@@ -257,21 +254,21 @@ class MCPGateway:
         try:
             result = await self._execute(name, arguments)
             return {"success": True, "result": result}
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {"error": str(e)}
     
-    async def _execute(self, name: str, args: Dict) -> Any:
+    async def _execute(self, name: str, args: dict) -> Any:
         """Execute specific tool logic"""
         if name.startswith("slll_"):
             return await self._execute_slll(name, args)
         elif name.startswith("design_"):
             return await self._execute_design(name, args)
-        elif name.startswith("analyze") or name.startswith("check_"):
+        elif name.startswith(("analyze", "check_")):
             return await self._execute_analysis(name, args)
         else:
             return f"Tool {name} executed with args: {args}"
     
-    async def _execute_slll(self, name: str, args: Dict) -> Any:
+    async def _execute_slll(self, name: str, args: dict) -> Any:
         """Execute SL-LLM native tools"""
         # Import and use SL-LLM core
         try:
@@ -287,12 +284,12 @@ class MCPGateway:
                                      session_id=args.get("session_id"))
             elif name == "slll_code":
                 return agent.generate(f"Write {args.get('language', 'code')}: {args.get('task')}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return f"Error: {e}"
         
         return "Tool execution placeholder"
     
-    async def _execute_design(self, name: str, args: Dict) -> Any:
+    async def _execute_design(self, name: str, args: dict) -> Any:
         """Execute agent design tools"""
         return {
             "pattern": args.get("pattern"),
@@ -300,7 +297,7 @@ class MCPGateway:
             "agents": args.get("agents", [])
         }
     
-    async def _execute_analysis(self, name: str, args: Dict) -> Any:
+    async def _execute_analysis(self, name: str, args: dict) -> Any:
         """Execute code analysis tools"""
         return {
             "path": args.get("path"),
@@ -331,7 +328,7 @@ class MCPGatewayServer:
             if tool:
                 return jsonify(tool.to_dict())
             return jsonify({"error": "Tool not found"}), 404
-        routes[f"/mcp/tools/<name>"] = get_tool
+        routes["/mcp/tools/<name>"] = get_tool
         
         async def execute_tool(request):
             from flask import request as flask_request
@@ -355,7 +352,7 @@ def get_mcp_gateway() -> MCPGateway:
 
 if __name__ == "__main__":
     gateway = get_mcp_gateway()
-    print(f"=== SL-LLM MCP Gateway ===")
+    print("=== SL-LLM MCP Gateway ===")
     print(f"Total tools: {len(gateway.tools)}")
     print("\nTools:")
     for name in list(gateway.tools.keys())[:10]:

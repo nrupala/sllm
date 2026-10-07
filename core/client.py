@@ -4,28 +4,26 @@ Supports: LM Studio, Ollama, Mock
 """
 
 import json
-import os
-import sys
 
 
 def detect_gpu():
     """Detect GPU availability"""
     try:
         import subprocess
-        result = subprocess.run(["nvidia-smi", "-L"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(["nvidia-smi", "-L"], capture_output=True, text=True, timeout=5)  # noqa: PLW1510
         if result.returncode == 0:
             return "nvidia", result.stdout.strip()
-    except:
+    except Exception:  # noqa: S110, BLE001
         pass
     
     # Check for AMD GPU
     try:
         import subprocess
-        result = subprocess.run(["wmic", "path", "win32_VideoController", "get", "name"], 
+        result = subprocess.run(["wmic", "path", "win32_VideoController", "get", "name"],   # noqa: PLW1510
                                 capture_output=True, text=True, timeout=5)
         if result.returncode == 0 and "AMD" in result.stdout:
             return "amd", result.stdout.strip()
-    except:
+    except Exception:  # noqa: S110, BLE001
         pass
     
     return "cpu", None
@@ -36,8 +34,8 @@ print(f"Detected: {GPU_INFO[0]} - {GPU_INFO[1][:50] if GPU_INFO[1] else 'CPU mod
 
 
 class BaseLLMClient:
-    def chat(self, messages, tools=None, **kwargs): raise NotImplemented
-    def generate(self, prompt, **kwargs): raise NotImplemented
+    def chat(self, messages, tools=None, **kwargs): raise NotImplementedError
+    def generate(self, prompt, **kwargs): raise NotImplementedError
 
 
 class MockClient(BaseLLMClient):
@@ -143,7 +141,7 @@ class LMStudioClient(BaseLLMClient):
             
             resp = requests.post(f"{self.url}{endpoint}", json=data, timeout=self.timeout)
             return resp.json()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {"error": str(e)}
     
     def chat(self, messages, tools=None, **kwargs):
@@ -183,12 +181,12 @@ def get_client(prefer="lmstudio", model="local-model"):
             import requests
             r = requests.get("http://localhost:1234/v1/models", timeout=5)
             if r.status_code == 200:
-                models = r.json().get("data", [])
+                r.json().get("data", [])
                 # Use the actual loaded model from LM Studio
                 model_name = "qwen2.5-coder"  # Auto-detected from loaded model
                 print(f">> Using LM Studio with {model_name} (GPU accelerated)")
                 return LMStudioClient(model_name)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"LM Studio not available: {e}")
     
     # Try Ollama (port 11434)
@@ -198,9 +196,9 @@ def get_client(prefer="lmstudio", model="local-model"):
             r = requests.get("http://localhost:11434/api/tags", timeout=5)
             if r.status_code == 200:
                 from core.agent import OllamaClient
-                print(f">> Using Ollama")
+                print(">> Using Ollama")
                 return OllamaClient(model)
-        except:
+        except Exception:  # noqa: S110, BLE001
             pass
     
     # Fallback to mock
@@ -241,7 +239,7 @@ class EnhancedSLLM:
                 if divisor == 0:
                     raise ValueError("Divisor cannot be zero.")
             return input_data
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {"error": str(e)}
     
     def process(self, task):
@@ -285,7 +283,7 @@ class LocalRunner:
     Uses LM Studio/Ollama APIs with fallback to mock.
     """
     
-    def __init__(self, prefer: str = "auto", model: str = None):
+    def __init__(self, prefer: str = "auto", model: str | None = None):
         self.prefer = prefer
         self.model = model
         self.provider = None
@@ -296,7 +294,7 @@ class LocalRunner:
         import urllib.request
         
         print(f"\n{'='*50}")
-        print(f"SL-LLM Local Runner")
+        print("SL-LLM Local Runner")
         print(f"{'='*50}")
         print(f"GPU: {GPU_INFO[0]}")
         
@@ -318,7 +316,7 @@ class LocalRunner:
                     print(f"[OK] Connected to LM Studio: {self.model}")
                     print(f"{'='*50}\n")
                     return self
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"[WARN] LM Studio: {e}")
         
         # Try Ollama (port 11434)
@@ -334,12 +332,12 @@ class LocalRunner:
                     print(f"[OK] Connected to Ollama: {self.model}")
                     print(f"{'='*50}\n")
                     return self
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"[WARN] Ollama: {e}")
         
         # Fallback to mock
         self.provider = "mock"
-        print(f"[OK] Using Mock backend")
+        print("[OK] Using Mock backend")
         print(f"{'='*50}\n")
         return self
         
@@ -385,17 +383,17 @@ class LocalRunner:
                 else:
                     # Ollama format
                     return {"message": {"content": result.get("message", {}).get("content", "")}}
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {"error": str(e), "message": {"content": f"Error: {e}"}}
     
-    def run_task(self, task: str, tools: list = None) -> str:
+    def run_task(self, task: str, tools: list | None = None) -> str:
         """Execute a task with full SL-LLM pipeline"""
         from knowledge_graph_manager import get_enhanced_context
         
         if not self.provider:
             self.initialize()
         
-        enhanced_context, kg_metadata = get_enhanced_context(task)
+        enhanced_context, _kg_metadata = get_enhanced_context(task)
         
         full_prompt = f"""{enhanced_context}
 
@@ -450,7 +448,7 @@ Task: {task}"""
             except KeyboardInterrupt:
                 print("\nGoodbye!")
                 break
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"Error: {e}\n")
 
 
@@ -473,14 +471,14 @@ class _LMStudioClientWrapper:
                 self.available_models = [m["id"] for m in models]
                 self.model = self.available_models[0] if self.available_models else "qwen/qwen2.5-coder-14b"
                 self.logger.info(f"Available: {self.available_models}")
-        except Exception as e:
-            self.logger.warn(f"Could not list models: {e}")
+        except Exception as e:  # noqa: BLE001
+            self.logger.warning(f"Could not list models: {e}")
             self.available_models = []
             self.model = "qwen/qwen2.5-coder-14b"
         
     def chat(self, messages, tools=None, **kwargs):
-        import urllib.request
         import json
+        import urllib.request
         
         payload = {
             "model": self.model,
@@ -502,7 +500,7 @@ class _LMStudioClientWrapper:
             with urllib.request.urlopen(req, timeout=180) as resp:
                 result = json.loads(resp.read())
                 return result
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {"error": str(e), "message": {"content": f"LM Studio error: {e}"}}
     
     def generate(self, prompt, **kwargs):
@@ -529,14 +527,14 @@ class _OllamaClientWrapper:
                 self.available_models = [m["name"] for m in models]
                 self.model = self.available_models[0] if self.available_models else "qwen3.5:9b"
                 self.logger.info(f"Available: {self.available_models}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.logger.error(f"Could not list models: {e}")
             self.available_models = []
             self.model = "qwen3.5:9b"
         
     def chat(self, messages, tools=None, **kwargs):
-        import urllib.request
         import json
+        import urllib.request
         
         ollama_messages = [{"role": m.get("role", "user"), "content": m.get("content", "")} for m in messages]
         
@@ -560,7 +558,7 @@ class _OllamaClientWrapper:
             with urllib.request.urlopen(req, timeout=180) as resp:
                 result = json.loads(resp.read())
                 return {"message": {"content": result.get("message", {}).get("content", "")}, "done": True}
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {"error": str(e), "message": {"content": f"Ollama error: {e}"}}
     
     def generate(self, prompt, **kwargs):
@@ -568,7 +566,7 @@ class _OllamaClientWrapper:
         return self.chat([{"role": "user", "content": prompt}], **kwargs)
 
 
-def run_local(prefer: str = "auto", model: str = None):
+def run_local(prefer: str = "auto", model: str | None = None):
     """Convenience function to run SL-LLM locally"""
     runner = LocalRunner(prefer, model)
     runner.initialize()

@@ -1,12 +1,8 @@
 """SL-LLM GUI with Help"""
 import http.server
+import os
 import socketserver
 import webbrowser
-from pathlib import Path
-import threading
-import time
-import os
-
 
 HTML = """<!DOCTYPE html>
 <html>
@@ -92,7 +88,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         elif self.path.startswith('/files'):
             import urllib.parse
             folder = urllib.parse.parse_qs(self.path[7:]).get('folder', [''])[0]
-            import os, pathlib
+            import pathlib
             base = pathlib.Path('D:/sl/projects/sllm')
             files = list((base / folder).glob('*')) if (base / folder).exists() else []
             self.send_response(200)

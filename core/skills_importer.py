@@ -4,9 +4,6 @@ Import all skills from Claude/MstyStudio ecosystem
 """
 
 from pathlib import Path
-from typing import Dict, List, Any
-import json
-
 
 SKILLS_SOURCE = Path("C:/Users/nrupa/AppData/Roaming/MstyStudio/skills")
 
@@ -30,9 +27,9 @@ class SkillsImporter:
                 if skill_data:
                     self.skills[skill_name] = skill_data
     
-    def _parse_skill(self, skill_dir: Path) -> Dict:
+    def _parse_skill(self, skill_dir: Path) -> dict:
         """Parse a skill directory"""
-        data = {
+        data: dict = {
             "name": skill_dir.name,
             "description": "",
             "files": [],
@@ -56,15 +53,15 @@ class SkillsImporter:
         
         return data
     
-    def list_skills(self) -> List[str]:
+    def list_skills(self) -> list[str]:
         """List all available skills"""
         return list(self.skills.keys())
     
-    def get_skill(self, name: str) -> Dict:
+    def get_skill(self, name: str) -> dict:
         """Get skill details"""
         return self.skills.get(name, {})
     
-    def get_skill_by_category(self, category: str) -> List[Dict]:
+    def get_skill_by_category(self, category: str) -> list[dict]:
         """Get skills by category"""
         return [
             {"name": k, **v} for k, v in self.skills.items() 

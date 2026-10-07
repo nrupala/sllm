@@ -4,15 +4,13 @@ Ported from agent-project-builder (JavaScript) to Python
 Handles model selection, provider management, and LLM interactions
 """
 
-import os
-import sys
-import json
 import asyncio
+import json
+import os
 import subprocess
-from pathlib import Path
-from typing import Dict, List, Optional, Any
+import sys
 from dataclasses import dataclass
-
+from pathlib import Path
 
 # ============================================================================
 # Hardware Detection
@@ -26,18 +24,18 @@ class HardwareProfile:
     cpu_cores: int
     platform: str
     arch: str
-    gpu_type: str = None
+    gpu_type: str | None = None
     gpu_vram_gb: int = 0
     gpu_available: bool = False
 
 
 def detect_hardware() -> HardwareProfile:
     """Detect hardware capabilities"""
-    import platform
     import ctypes
+    import platform
     
     # Get RAM on Windows
-    if platform.system() == "Windows":
+    if sys.platform == "win32":
         try:
             kernel32 = ctypes.windll.kernel32
             c_ulong = ctypes.c_ulong
@@ -50,7 +48,7 @@ def detect_hardware() -> HardwareProfile:
             memstatus.dwLength = ctypes.sizeof(memstatus)
             kernel32.GlobalMemoryStatus(ctypes.byref(memstatus))
             total_ram = memstatus.dwTotalPhys / (1024**3)
-        except:
+        except Exception:  # noqa: BLE001
             total_ram = 8.0  # Default
     else:
         total_ram = 8.0
@@ -63,7 +61,7 @@ def detect_hardware() -> HardwareProfile:
     
     # Check NVIDIA GPU
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: PLW1510
             ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits"],
             capture_output=True, text=True, timeout=5
         )
@@ -72,13 +70,13 @@ def detect_hardware() -> HardwareProfile:
             gpu_vram = sum(values) // 1024
             gpu_type = "cuda"
             gpu_available = True
-    except:
+    except Exception:  # noqa: S110, BLE001
         pass
     
     # Check Apple Silicon
     if platform.system() == "Darwin" and platform.machine() == "arm64":
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # noqa: PLW1510
                 ["sysctl", "-n", "hw.memsize"],
                 capture_output=True, text=True, timeout=5
             )
@@ -88,7 +86,7 @@ def detect_hardware() -> HardwareProfile:
                 gpu_vram = int(unified_ram * 0.7)
                 gpu_type = "metal"
                 gpu_available = True
-        except:
+        except Exception:  # noqa: S110, BLE001
             pass
     
     return HardwareProfile(
@@ -114,7 +112,7 @@ def can_run_model(hardware: HardwareProfile, vram_required: int) -> bool:
 # Model Registry (from modelSelector.js)
 # ============================================================================
 
-MODEL_REGISTRY: Dict[str, List[Dict]] = {
+MODEL_REGISTRY: dict[str, list[dict]] = {
     "local": [
         {"id": "qwen2.5-coder-14b", "name": "Qwen2.5 Coder 14B", "params": "14B", "vram_required": 8, "quality": "high", "specialty": "code-generation"},
         {"id": "qwen2.5-coder-7b", "name": "Qwen2.5 Coder 7B", "params": "7B", "vram_required": 5, "quality": "high", "specialty": "code-generation"},
@@ -142,7 +140,7 @@ class ModelSelector:
     """Selects appropriate model based on task and hardware"""
     
     def __init__(self):
-        self.hardware_profile: Optional[HardwareProfile] = None
+        self.hardware_profile: HardwareProfile | None = None
         self.local_model_paths = [
             "C:/Users/HomeUser/.lmstudio/models",
             "D:/models/lmstudio-community",
@@ -155,7 +153,7 @@ class ModelSelector:
             self.hardware_profile = detect_hardware()
         return self.hardware_profile
     
-    def find_local_model(self, name_hint: str) -> Optional[str]:
+    def find_local_model(self, name_hint: str) -> str | None:
         """Find local GGUF model"""
         for search_path in self.local_model_paths:
             p = Path(search_path)
@@ -166,12 +164,12 @@ class ModelSelector:
                 for f in p.rglob("*.gguf"):
                     if name_hint.lower() in f.name.lower():
                         return str(f)
-            except:
+            except Exception:  # noqa: S110, BLE001
                 pass
         
         return None
     
-    def select_model(self, task: str = "code-generation", quality: str = "auto") -> Dict:
+    def select_model(self, task: str = "code-generation", quality: str = "auto") -> dict:
         """Select best model for task"""
         hardware = self.detect_hardware_sync()
         
@@ -236,14 +234,14 @@ class ModelManager:
         import os as _os
         self._os = _os
         
-        self.provider: str = None
-        self.model_config: Dict = {}
-        self.clients: Dict = {}
-        self.client_type: str = None
-        self.is_local_only: _os.environ.get("LOCAL_ONLY", "true").lower() == "true"
+        self.provider: str | None = None
+        self.model_config: dict = {}
+        self.clients: dict = {}
+        self.client_type: str | None = None
+        self.is_local_only: bool = _os.environ.get("LOCAL_ONLY", "true").lower() == "true"
         self.max_concurrent: int = 20
         self.active_requests: int = 0
-        self.request_queue: List = []
+        self.request_queue: list = []
         
         self.logger = {
             "info": lambda m: print(f"[ModelManager] {m}"),
@@ -254,34 +252,34 @@ class ModelManager:
         self.model_selector = ModelSelector()
         self.built_in_engine = None
     
-    def get_model_config(self, provider: str) -> Dict:
+    def get_model_config(self, provider: str) -> dict:
         """Get model config from environment"""
         
         if provider.lower() == "lmstudio":
             return {
                 "provider": "lmstudio",
                 "model": os.environ.get("LMSTUDIO_MODEL", "qwen/qwen2.5-coder-14b"),
-                "temperature": float(os.environ.get("TEMPERATURE", 0.7)),
-                "max_tokens": int(os.environ.get("MAX_TOKENS", 4096)),
+                "temperature": float(os.environ.get("TEMPERATURE", "0.7")),
+                "max_tokens": int(os.environ.get("MAX_TOKENS", "4096")),
                 "base_path": os.environ.get("LMSTUDIO_ENDPOINT", "http://localhost:1234/v1"),
             }
         elif provider.lower() == "ollama":
             return {
                 "provider": "ollama",
                 "model": os.environ.get("OLLAMA_MODEL", "qwen3.5:9b"),
-                "temperature": float(os.environ.get("TEMPERATURE", 0.7)),
-                "max_tokens": int(os.environ.get("MAX_TOKENS", 4096)),
+                "temperature": float(os.environ.get("TEMPERATURE", "0.7")),
+                "max_tokens": int(os.environ.get("MAX_TOKENS", "4096")),
                 "base_path": os.environ.get("OLLAMA_ENDPOINT", "http://localhost:11434"),
             }
         else:
             return {
                 "provider": "openai",
                 "model": os.environ.get("OPENAI_MODEL", "gpt-3.5-turbo"),
-                "temperature": float(os.environ.get("TEMPERATURE", 0.7)),
-                "max_tokens": int(os.environ.get("MAX_TOKENS", 4096)),
+                "temperature": float(os.environ.get("TEMPERATURE", "0.7")),
+                "max_tokens": int(os.environ.get("MAX_TOKENS", "4096")),
             }
     
-    async def initialize(self, provider: str = None):
+    async def initialize(self, provider: str | None = None):
         """Initialize model manager"""
         if provider is None:
             provider = os.environ.get("MODEL_PROVIDER", "lmstudio")
@@ -293,7 +291,7 @@ class ModelManager:
         model_config = self.get_model_config(provider)
         await self.set_provider(provider, model_config)
     
-    async def set_provider(self, provider_name: str, model_config: Dict):
+    async def set_provider(self, provider_name: str, model_config: dict):
         """Set provider"""
         self.provider = provider_name
         self.model_config = model_config
@@ -315,33 +313,33 @@ class ModelManager:
         # Try LM Studio
         try:
             req = urllib.request.Request("http://localhost:1234/v1/models")
-            with urllib.request.urlopen(req, timeout=3) as resp:
+            with urllib.request.urlopen(req, timeout=3) as resp:  # noqa: ASYNC210
                 if resp.status == 200:
                     self.provider = "lmstudio"
                     self.client_type = "lmstudio"
                     self.logger["info"]("Connected to LM Studio")
                     return
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.logger["warn"](f"LM Studio: {e}")
         
         # Try Ollama
         try:
             import urllib.request
             req = urllib.request.Request("http://localhost:11434/api/tags")
-            with urllib.request.urlopen(req, timeout=3) as resp:
+            with urllib.request.urlopen(req, timeout=3) as resp:  # noqa: ASYNC210
                 if resp.status == 200:
                     self.provider = "ollama"
                     self.client_type = "ollama"
                     self.logger["info"]("Connected to Ollama")
                     return
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.logger["warn"](f"Ollama: {e}")
         
         # Fall back to mock
         self.client_type = "mock"
         self.logger["warn"]("All local providers failed, using mock")
     
-    async def generate(self, prompt: str, options: Dict = None) -> str:
+    async def generate(self, prompt: str, options: dict | None = None) -> str:
         """Generate completion"""
         options = options or {}
         
@@ -352,10 +350,9 @@ class ModelManager:
         else:
             return self._generate_mock(prompt, options)
     
-    async def _generate_lmstudio(self, prompt: str, options: Dict) -> str:
+    async def _generate_lmstudio(self, prompt: str, options: dict) -> str:
         """Generate using LM Studio"""
         import urllib.request
-        import json
         
         payload = {
             "model": self.model_config.get("model", "qwen/qwen2.5-coder-14b"),
@@ -374,17 +371,16 @@ class ModelManager:
         )
         
         try:
-            with urllib.request.urlopen(req, timeout=180) as resp:
+            with urllib.request.urlopen(req, timeout=180) as resp:  # noqa: ASYNC210
                 result = json.loads(resp.read())
                 return result.get("choices", [{}])[0].get("message", {}).get("content", "")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.logger["error"](f"LM Studio error: {e}")
             return self._generate_mock(prompt, options)
     
-    async def _generate_ollama(self, prompt: str, options: Dict) -> str:
+    async def _generate_ollama(self, prompt: str, options: dict) -> str:
         """Generate using Ollama"""
         import urllib.request
-        import json
         
         payload = {
             "model": self.model_config.get("model", "qwen3.5:9b"),
@@ -405,14 +401,14 @@ class ModelManager:
         )
         
         try:
-            with urllib.request.urlopen(req, timeout=180) as resp:
+            with urllib.request.urlopen(req, timeout=180) as resp:  # noqa: ASYNC210
                 result = json.loads(resp.read())
                 return result.get("message", {}).get("content", "")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.logger["error"](f"Ollama error: {e}")
             return self._generate_mock(prompt, options)
     
-    def _generate_mock(self, prompt: str, options: Dict) -> str:
+    def _generate_mock(self, prompt: str, options: dict) -> str:
         """Mock response"""
         responses = [
             f'Mock response to: "{prompt[:80]}..."',
@@ -422,7 +418,7 @@ class ModelManager:
         import random
         return random.choice(responses)
     
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         """Get manager stats"""
         return {
             "provider": self.provider,
@@ -437,7 +433,7 @@ class ModelManager:
 # Convenience Functions
 # ============================================================================
 
-async def create_model_manager(provider: str = None) -> ModelManager:
+async def create_model_manager(provider: str | None = None) -> ModelManager:
     """Create and initialize model manager"""
     manager = ModelManager()
     await manager.initialize(provider)
@@ -457,7 +453,7 @@ if __name__ == "__main__":
         
         # Hardware
         hw = detect_hardware()
-        print(f"Hardware:")
+        print("Hardware:")
         print(f"  RAM: {hw.total_ram_gb}GB total, {hw.available_ram_gb}GB available")
         print(f"  CPU: {hw.cpu_cores} cores")
         print(f"  GPU: {hw.gpu_type or 'none'} ({hw.gpu_vram_gb}GB)" if hw.gpu_available else "  GPU: none")

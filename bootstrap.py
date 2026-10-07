@@ -3,16 +3,14 @@ SL-LLM Bootloader
 Handles Ollama installation and model setup
 """
 
-import os
 import subprocess
 import sys
-from pathlib import Path
 
 
 def check_ollama():
     """Check if Ollama is installed and running"""
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: PLW1510
             ["ollama", "--version"],
             capture_output=True,
             text=True,
@@ -21,7 +19,7 @@ def check_ollama():
         return True, result.stdout.strip()
     except FileNotFoundError:
         return False, "Ollama not found"
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return False, str(e)
 
 
@@ -32,7 +30,7 @@ def check_model(model_name: str):
         resp = requests.get("http://localhost:11434/api/tags", timeout=5)
         models = resp.json().get("models", [])
         return any(m.get("name", "").startswith(model_name) for m in models)
-    except:
+    except Exception:  # noqa: BLE001
         return False
 
 
@@ -64,7 +62,7 @@ def install_model(model: str = "deepseek-coder:14b"):
         subprocess.run(["ollama", "pull", model], check=True)
         print(f"Model {model} installed successfully")
         return True
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"Failed to install model: {e}")
         return False
 
@@ -77,7 +75,7 @@ def start_ollama():
                          stderr=subprocess.DEVNULL)
         print("Ollama serve started")
         return True
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"Failed to start Ollama: {e}")
         return False
 

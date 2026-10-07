@@ -4,13 +4,11 @@ Implements safety checks before any potentially dangerous operations.
 Per SL-LLM principles: Always validate before execution.
 """
 
-from typing import Any, List, Optional, Tuple
-import re
+from typing import Any
 
 
 class ZeroCheckError(Exception):
     """Raised when a zero-check validation fails"""
-    pass
 
 
 class ZeroCheckValidator:
@@ -25,7 +23,7 @@ class ZeroCheckValidator:
     """
     
     @staticmethod
-    def validate_division(numerator: Any, denominator: Any) -> Tuple[bool, str]:
+    def validate_division(numerator: Any, denominator: Any) -> tuple[bool, str]:
         """
         Validate division operation before execution.
         Returns: (is_valid, error_message)
@@ -38,11 +36,11 @@ class ZeroCheckValidator:
             if not isinstance(numerator, (int, float)):
                 return False, f"Numerator must be number, got {type(numerator).__name__}"
             return True, ""
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return False, f"Validation error: {e}"
     
     @staticmethod
-    def validate_modulo(dividend: Any, divisor: Any) -> Tuple[bool, str]:
+    def validate_modulo(dividend: Any, divisor: Any) -> tuple[bool, str]:
         """Validate modulo operation"""
         if divisor == 0:
             return False, "Modulo by zero: divisor is 0"
@@ -51,7 +49,7 @@ class ZeroCheckValidator:
         return True, ""
     
     @staticmethod
-    def validate_array_access(arr: List, index: int, allow_negative: bool = False) -> Tuple[bool, str]:
+    def validate_array_access(arr: list, index: int, allow_negative: bool = False) -> tuple[bool, str]:
         """Validate array/index access"""
         if not isinstance(arr, list):
             return False, f"Expected list, got {type(arr).__name__}"
@@ -64,7 +62,7 @@ class ZeroCheckValidator:
         return True, ""
     
     @staticmethod
-    def validate_file_path(path: str, allow_absolute: bool = False) -> Tuple[bool, str]:
+    def validate_file_path(path: str, allow_absolute: bool = False) -> tuple[bool, str]:
         """Validate file path for safety"""
         if not path:
             return False, "Empty path"
@@ -77,7 +75,7 @@ class ZeroCheckValidator:
         return True, ""
     
     @staticmethod
-    def validate_not_empty(value: Any, field_name: str = "value") -> Tuple[bool, str]:
+    def validate_not_empty(value: Any, field_name: str = "value") -> tuple[bool, str]:
         """Validate value is not None or empty"""
         if value is None:
             return False, f"{field_name} is None"
@@ -86,7 +84,7 @@ class ZeroCheckValidator:
         return True, ""
     
     @staticmethod
-    def validate_range(value: Any, min_val: Any = None, max_val: Any = None, field_name: str = "value") -> Tuple[bool, str]:
+    def validate_range(value: Any, min_val: Any = None, max_val: Any = None, field_name: str = "value") -> tuple[bool, str]:
         """Validate value is within range"""
         if min_val is not None and value < min_val:
             return False, f"{field_name} {value} below minimum {min_val}"
@@ -95,7 +93,7 @@ class ZeroCheckValidator:
         return True, ""
     
     @staticmethod
-    def validate_type(value: Any, expected_types: tuple, field_name: str = "value") -> Tuple[bool, str]:
+    def validate_type(value: Any, expected_types: tuple, field_name: str = "value") -> tuple[bool, str]:
         """Validate value type"""
         if not isinstance(value, expected_types):
             type_names = ", ".join(t.__name__ for t in expected_types)
@@ -133,7 +131,7 @@ def safe_execute(func, *args, **kwargs):
             return {"success": True, "result": func(*args, **kwargs)}
         except ZeroCheckError as e:
             return {"success": False, "error": str(e), "type": "ZeroCheckError"}
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {"success": False, "error": str(e), "type": type(e).__name__}
     
     return wrapper
@@ -167,7 +165,6 @@ def require_not_empty(func):
 
 
 import functools
-
 
 if __name__ == "__main__":
     # Test zero-check validation

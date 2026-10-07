@@ -2,10 +2,10 @@
 SL-LLM Production GUI
 Full production ecosystem with model selection, engine selection, and monitoring.
 """
-from flask import Flask, render_template_string, jsonify, request
 import os
-import threading
 import platform
+
+from flask import Flask, jsonify, render_template_string, request
 
 app = Flask(__name__)
 
@@ -354,7 +354,6 @@ _state = {
 
 def get_runner(force=False):
     """Get or create the runner"""
-    global _state
     
     if _state["initialized"] and _state["runner"] and not force:
         return _state["runner"]
@@ -370,7 +369,6 @@ def get_runner(force=False):
 
 def get_system_info():
     """Get system info"""
-    import os
     import ctypes
     
     total_ram = 8.0
@@ -381,7 +379,7 @@ def get_system_info():
             mem.dwLength = ctypes.sizeof(mem)
             kernel32.GlobalMemoryStatus(ctypes.byref(mem))
             total_ram = mem.dwTotalPhys / (1024**3)
-    except:
+    except Exception:  # noqa: S110, BLE001
         pass
     
     return {
@@ -410,7 +408,7 @@ def api_models():
             data = json.loads(resp.read())
             for m in data.get("data", []):
                 models.append({"id": m["id"], "name": m["id"], "provider": "lmstudio"})
-    except:
+    except Exception:  # noqa: S110, BLE001
         pass
     
     # Ollama models
@@ -421,7 +419,7 @@ def api_models():
             data = json.loads(resp.read())
             for m in data.get("models", []):
                 models.append({"id": m["name"], "name": m["name"], "provider": "ollama"})
-    except:
+    except Exception:  # noqa: S110, BLE001
         pass
     
     # Fallback
@@ -440,14 +438,13 @@ def api_system():
 @app.route('/api/set_engine')
 def api_set_engine():
     """Set the engine"""
-    engine = request.args.get('engine', 'auto')
+    request.args.get('engine', 'auto')
     
     # Re-initialize with new engine
-    global _state
     _state["initialized"] = False
     _state["runner"] = None
     
-    runner = get_runner()
+    get_runner()
     
     return jsonify({"status": "ok", "provider": _state["provider"]})
 
@@ -456,8 +453,8 @@ def api_chat():
     """Chat completion"""
     data = request.json
     message = data.get('message', '')
-    temperature = data.get('temperature', 0.7)
-    max_tokens = data.get('max_tokens', 2048)
+    data.get('temperature', 0.7)
+    data.get('max_tokens', 2048)
     model = data.get('model', '')
     
     try:
@@ -469,8 +466,8 @@ def api_chat():
             {"role": "user", "content": message}
         ])
         content = response.get("message", {}).get("content", "No response")
-    except Exception as e:
-        content = f"Error: {str(e)}"
+    except Exception as e:  # noqa: BLE001
+        content = f"Error: {e!s}"
     
     return jsonify({
         "response": content,
@@ -490,8 +487,8 @@ def api_code():
         if model:
             runner.model = model
         code = runner.run_task(f"Write code: {task}")
-    except Exception as e:
-        code = f"# Error: {str(e)}"
+    except Exception as e:  # noqa: BLE001
+        code = f"# Error: {e!s}"
     
     return jsonify({"code": code})
 
