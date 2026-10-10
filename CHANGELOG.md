@@ -2,6 +2,20 @@
 
 All notable changes to SL-LLM will be documented in this file.
 
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+- Portfolio certification: PR-flow discipline documented in CONTRIBUTING.md
+  (draft PR -> tests green -> owner merges; no direct pushes to main; each PR
+  adds a CHANGELOG entry under Unreleased and bumps SemVer).
+- Portfolio certification: ATTRIBUTION.md (owned by Nrupal Akolkar).
+- Portfolio certification: MIT license headers on all Python source files.
+
+All notable changes to SL-LLM will be documented in this file.
+
 ## [1.0.0] - 2025-03-31
 
 ### Added

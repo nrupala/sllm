@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Nrupal Akolkar
+# SPDX-License-Identifier: MIT
+# See LICENSE for the full license text.
 """
 Knowledge Graph - Shows retained learning from SL-LLM sessions
 This demonstrates that the system retains learned lessons for future use.
