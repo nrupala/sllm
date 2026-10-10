@@ -4,18 +4,17 @@ Demonstrates: Generate bug -> Execute to Witness Error -> Reflect -> Fix -> Veri
 """
 
 import json
-import time
+from datetime import datetime, timezone
 from pathlib import Path
-from datetime import datetime
 
-RESULTS = []
+RESULTS: list = []
 BASE = "D:/sl/projects/sllm/test_run_samples"
 Path(BASE).mkdir(parents=True, exist_ok=True)
 
 
 def log_step(phase, message, data=None):
     entry = {
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "phase": phase,
         "message": message,
         "data": data
@@ -32,16 +31,16 @@ def run_test():
     print("Code -> Execute -> WITNESS ERROR -> Reflect -> Fix -> Verify")
     print("=" * 70)
     
-    from tools.builtin import execute_tool
+    from core.agent import MemoryStore, SelfEvaluator
     from core.client import MockClient
-    from core.self_modify import SelfModifier, ReflectiveAgent
-    from core.agent import SelfEvaluator, MemoryStore
+    from core.self_modify import ReflectiveAgent, SelfModifier
+    from tools.builtin import execute_tool
     
     # Initialize components
     client = MockClient()
     modifier = SelfModifier(client=client)
     evaluator = SelfEvaluator(client)
-    reflection_agent = ReflectiveAgent(client, modifier, evaluator)
+    ReflectiveAgent(client, modifier, evaluator)
     memory = MemoryStore()
     
     # ============================================================
@@ -201,16 +200,16 @@ Add proper division by zero handling."""
     print("\n" + "=" * 70)
     print("RIGOROUS SELF-LEARNING TEST SUMMARY")
     print("=" * 70)
-    print(f"1. Generated buggy code: YES")
+    print("1. Generated buggy code: YES")
     print(f"2. Executed to WITNESS error: {'YES' if error_witnessed else 'NO'}")
     print(f"   - Normal case (10/2): {normal_result.strip()}")
     print(f"   - Error case (10/0): {error_result[:50]}...")
     print(f"3. Self-reflection on WITNESSED error: YES ({len(reflection_output)} chars)")
-    print(f"4. Generated fix based on actual error: YES")
+    print("4. Generated fix based on actual error: YES")
     print(f"5. Verification - normal division: {'PASS' if normal_works else 'FAIL'}")
     print(f"6. Verification - zero division: {'PASS' if zero_handled else 'FAIL'}")
-    print(f"7. Learning saved with evidence: YES")
-    print(f"8. Checkpoint for safety: YES")
+    print("7. Learning saved with evidence: YES")
+    print("8. Checkpoint for safety: YES")
     print("=" * 70)
     print(f"OVERALL: {'SUCCESS - TRUE SELF-LEARNING VERIFIED' if overall_success else 'FAILED'}")
     print("=" * 70)
@@ -230,7 +229,7 @@ def save_results(result):
     with open(json_path, "w") as f:
         json.dump({
             "test_name": "Rigorous Self-Learning (Witness Error)",
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "result": result,
             "steps": RESULTS
         }, f, indent=2)

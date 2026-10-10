@@ -3,7 +3,6 @@ Enhanced RAG Retrieval Test Suite
 Proves the dynamic intelligence of the SL-LLM Knowledge Graph
 """
 
-import json
 import sys
 from pathlib import Path
 
@@ -11,9 +10,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from knowledge_graph_manager import (
     FluidKnowledgeGraph,
-    TFIDFRetriever,
     MultiFactorScorer,
-    KnowledgeClassifier,
+    TFIDFRetriever,
     get_enhanced_context,
 )
 
@@ -39,7 +37,7 @@ def test_tfidf_similarity():
     
     print(f"\nQuery: '{query}'")
     print(f"Query tokens: {query_tokens}")
-    print(f"\nSimilarity scores:")
+    print("\nSimilarity scores:")
     
     for i, (doc, tokens) in enumerate(zip(docs, doc_tokens_list)):
         doc_vector = TFIDFRetriever.compute_tfidf_vector(tokens, idf)
@@ -80,13 +78,13 @@ def test_multi_factor_scoring():
     scored.sort(key=lambda x: x["score"], reverse=True)
     
     print(f"\nQuery: '{query}'")
-    print(f"\nRanked results:")
+    print("\nRanked results:")
     for i, s in enumerate(scored):
         ins = s["insight"]
         print(f"\n  Rank {i+1} (score: {s['score']:.4f}):")
         print(f"    Content: '{ins['insight'][:70]}...'")
         print(f"    Category: {ins['category']}")
-        print(f"    Breakdown:")
+        print("    Breakdown:")
         for factor, val in s["breakdown"].items():
             print(f"      {factor}: {val:.4f}")
     
@@ -180,7 +178,7 @@ def test_retrieval_quality_comparison():
     result = fkg.process(query)
     
     print(f"\nQuery: '{query}'")
-    print(f"\nNEW RAG Retrieval Results:")
+    print("\nNEW RAG Retrieval Results:")
     print(f"  Retrieved: {result['insights_count']} insights")
     print(f"  Classification confidence: {result['classification']['confidence']:.2%}")
     print(f"  Context header: {result['context_header']}")
@@ -216,7 +214,7 @@ if __name__ == "__main__":
         try:
             if test_fn():
                 passed += 1
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"\n[FAIL] {name}: {e}")
             failed += 1
     

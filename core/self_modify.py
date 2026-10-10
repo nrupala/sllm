@@ -1,7 +1,7 @@
 import json
 import re
 from pathlib import Path
-from typing import Optional
+
 from core.agent import VersionControl
 
 
@@ -10,7 +10,7 @@ class SelfModifier:
         self.project_path = Path(project_path)
         self.vc = VersionControl(project_path)
         self.client = client
-        self.modification_log = []
+        self.modification_log: list = []
 
     def can_modify(self, path: str) -> bool:
         path_obj = Path(path)
@@ -20,7 +20,7 @@ class SelfModifier:
                 return True
         return False
 
-    def create_checkpoint(self, label: str = None) -> str:
+    def create_checkpoint(self, label: str | None = None) -> str:
         return self.vc.create_snapshot(label)
 
     def restore_checkpoint(self, label: str) -> bool:
@@ -61,7 +61,7 @@ class SelfModifier:
             })
             
             return {"success": True, "checkpoint": checkpoint, "file": file_path}
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {"success": False, "error": str(e)}
 
     def _generate_modified_content(self, original: str, modification: str) -> str:
@@ -112,7 +112,7 @@ Respond in JSON with keys: correctness, efficiency, issues[], suggestions[]"""
         response = self.client.generate(prompt)
         try:
             return json.loads(response.get("response", "{}"))
-        except:
+        except Exception:  # noqa: BLE001
             return {"correctness": "unknown", "efficiency": "unknown", "issues": [], "suggestions": []}
 
     def should_self_modify(self, analysis: dict) -> bool:
@@ -162,8 +162,8 @@ class ReflectiveAgent:
             import time
             start = time.time()
             
-            from tools.builtin import ExecuteCodeTool
-            result = ExecuteCodeTool.execute({"code": code, "timeout": 60})
+            from tools.builtin import execute_tool
+            result = execute_tool("execute_code", {"code": code, "timeout": 60})
             exec_time = time.time() - start
             
             reflection = self.reflect_on_task(task, result, exec_time)

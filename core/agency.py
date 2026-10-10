@@ -7,10 +7,8 @@ SL-LLM Agency System
 """
 
 import uuid
-import json
-from datetime import datetime
-from typing import List, Dict, Optional, Callable
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import Enum
 
 
@@ -34,10 +32,10 @@ class ReasoningStep:
     step_id: str
     step_number: int
     thought: str
-    evidence: List[str] = field(default_factory=list)
-    alternatives_considered: List[str] = field(default_factory=list)
+    evidence: list[str] = field(default_factory=list)
+    alternatives_considered: list[str] = field(default_factory=list)
     confidence: float = 0.5
-    timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 @dataclass
@@ -45,13 +43,13 @@ class Decision:
     id: str
     decision_type: DecisionType
     context: str
-    options_considered: List[Dict]
-    chosen_option: Dict
-    reasoning_chain: List[ReasoningStep]
+    options_considered: list[dict]
+    chosen_option: dict
+    reasoning_chain: list[ReasoningStep]
     confidence: float
-    ethical_checks: List[Dict]
-    outcome: Optional[Dict] = None
-    timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
+    ethical_checks: list[dict]
+    outcome: dict | None = None
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 class Agency:
@@ -60,25 +58,25 @@ class Agency:
     def __init__(self, name: str = "SL-LLM"):
         self.id = str(uuid.uuid4())
         self.name = name
-        self.decision_history: List[Decision] = []
-        self.goals: List[Dict] = []
-        self.constraints: Dict[EthicalConstraint, bool] = {
+        self.decision_history: list[Decision] = []
+        self.goals: list[dict] = []
+        self.constraints: dict[EthicalConstraint, bool] = {
             EthicalConstraint.SAFE: True,
             EthicalConstraint.HONEST: True,
             EthicalConstraint.FAIR: True,
             EthicalConstraint.PRIVATE: True,
             EthicalConstraint.HELPFUL: True,
         }
-        self.values: Dict[str, float] = {}
+        self.values: dict[str, float] = {}
     
-    def set_goal(self, goal: str, priority: float = 1.0, deadline: Optional[str] = None):
+    def set_goal(self, goal: str, priority: float = 1.0, deadline: str | None = None):
         """Set a goal to pursue"""
         self.goals.append({
             "id": str(uuid.uuid4()),
             "goal": goal,
             "priority": priority,
             "deadline": deadline,
-            "created": datetime.now().isoformat(),
+            "created": datetime.now(timezone.utc).isoformat(),
             "status": "active"
         })
     
@@ -93,7 +91,7 @@ class Agency:
     def make_decision(
         self,
         context: str,
-        options: List[Dict],
+        options: list[dict],
         decision_type: DecisionType = DecisionType.DELIBERATE
     ) -> Decision:
         """Make autonomous decision with full reasoning trace"""
@@ -178,35 +176,32 @@ class Agency:
         self.decision_history.append(decision)
         return decision
     
-    def _check_ethical_constraints(self, options: List[Dict]) -> Dict:
+    def _check_ethical_constraints(self, options: list[dict]) -> dict:
         """Check options against ethical constraints"""
         results = {}
         
         for option in options:
             option_name = option.get("name", "Unknown")
-            checks = {"passed": True, "violations": []}
+            checks: dict = {"passed": True, "violations": []}
             
             # Check each constraint
-            if self.constraints.get(EthicalConstraint.SAFE):
-                if option.get("harmful", False):
-                    checks["passed"] = False
-                    checks["violations"].append("unsafe")
+            if self.constraints.get(EthicalConstraint.SAFE) and option.get("harmful", False):
+                checks["passed"] = False
+                checks["violations"].append("unsafe")
             
-            if self.constraints.get(EthicalConstraint.HONEST):
-                if option.get("dishonest", False):
-                    checks["passed"] = False
-                    checks["violations"].append("dishonest")
+            if self.constraints.get(EthicalConstraint.HONEST) and option.get("dishonest", False):
+                checks["passed"] = False
+                checks["violations"].append("dishonest")
             
-            if self.constraints.get(EthicalConstraint.FAIR):
-                if option.get("biased", False):
-                    checks["passed"] = False
-                    checks["violations"].append("unfair")
+            if self.constraints.get(EthicalConstraint.FAIR) and option.get("biased", False):
+                checks["passed"] = False
+                checks["violations"].append("unfair")
             
             results[option_name] = checks
         
         return results
     
-    def evaluate_outcome(self, decision_id: str, outcome: Dict):
+    def evaluate_outcome(self, decision_id: str, outcome: dict):
         """Record outcome of a decision for learning"""
         for decision in self.decision_history:
             if decision.id == decision_id:
@@ -219,7 +214,7 @@ class Agency:
                 if step.confidence < 1.0:
                     step.confidence = min(1.0, step.confidence + 0.05)
     
-    def get_reasoning_trace(self, decision_id: str) -> List[Dict]:
+    def get_reasoning_trace(self, decision_id: str) -> list[dict]:
         """Get full reasoning trace for a decision"""
         for decision in self.decision_history:
             if decision.id == decision_id:
@@ -260,7 +255,7 @@ class Agency:
         
         return "Decision not found"
     
-    def get_agency_status(self) -> Dict:
+    def get_agency_status(self) -> dict:
         """Get current agency status"""
         return {
             "name": self.name,

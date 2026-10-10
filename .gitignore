@@ -19,11 +19,14 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+pip-log.txt
+pip-delete-this-directory.txt
 
 # Virtual environments
 venv/
 env/
 ENV/
+.venv
 
 # IDE
 .vscode/
@@ -31,12 +34,38 @@ ENV/
 *.swp
 *.swo
 *~
-
-# OS
 .DS_Store
-Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+*.cover
 
 # Project specific
 memory/*.jsonl
 snapshots/
 *.log
+logs/
+cache/
+temp/
+tmp/
+
+# SL-LLM specific
+models/
+gguf_models/
+*.gguf
+!docs/**/*.md
+!prompts/**/*.yaml
+
+# Environment
+.env
+.env.local
+secrets.json
+
+# Documentation builds
+docs/_build/
+docs/.doctrees/
+site/

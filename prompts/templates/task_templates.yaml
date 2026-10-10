@@ -1,0 +1,105 @@
+name: question_answer
+description: Template for question answering tasks
+variables:
+  - name: question
+    type: string
+    required: true
+  - name: context
+    type: string
+    required: false
+  - name: max_length
+    type: integer
+    default: 500
+
+template: |
+  {{#if context}}
+  Context information:
+  {{context}}
+
+  {{/if}}
+  Question: {{question}}
+
+  Answer the question accurately and concisely. If you don't know the answer, say "I don't know" rather than making up information.
+
+  {{#if max_length}}
+  Keep your response under {{max_length}} words.
+  {{/if}}
+---
+name: summarization
+description: Template for summarizing text
+variables:
+  - name: text
+    type: string
+    required: true
+  - name: max_sentences
+    type: integer
+    default: 3
+
+template: |
+  Summarize the following text in {{max_sentences}} sentences or fewer:
+
+  {{text}}
+
+  Provide a clear, concise summary that captures the main points.
+---
+name: code_generation
+description: Template for generating code
+variables:
+  - name: language
+    type: string
+    required: true
+  - name: task
+    type: string
+    required: true
+  - name: constraints
+    type: string
+    required: false
+
+template: |
+  Write {{language}} code to accomplish the following task:
+
+  {{task}}
+
+  {{#if constraints}}
+  Constraints and requirements:
+  {{constraints}}
+  {{/if}}
+
+  Provide clean, well-documented code with appropriate error handling.
+---
+name: analysis
+description: Template for analyzing data or code
+variables:
+  - name: subject
+    type: string
+    required: true
+  - name: analysis_type
+    type: string
+    required: true
+
+template: |
+  Perform {{analysis_type}} analysis on the following:
+
+  {{subject}}
+
+  Provide detailed insights and recommendations based on your analysis.
+---
+name: conversation
+description: Template for general conversation with context
+variables:
+  - name: user_message
+    type: string
+    required: true
+  - name: conversation_history
+    type: string
+    required: false
+
+template: |
+  {{#if conversation_history}}
+  Previous conversation:
+  {{conversation_history}}
+
+  {{/if}}
+  User: {{user_message}}
+
+  Respond as a helpful, knowledgeable assistant. Consider the conversation history to maintain context.

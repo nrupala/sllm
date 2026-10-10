@@ -1,0 +1,13 @@
+{
+  "last_save": "2026-04-01T01:24:32.297132",
+  "save_count": 1,
+  "backup_path": "D:\\sl\\projects\\sllm\\memory\\backups\\backup_20260401_012432",
+  "saved_files": [
+    "knowledge_graph",
+    "insights",
+    "episodes"
+  ],
+  "state": {
+    "test": "data"
+  }
+}

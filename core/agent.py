@@ -1,11 +1,7 @@
 import json
 import logging
-import os
-import subprocess
-import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -25,10 +21,10 @@ class OllamaClient:
                 logger.info(f"Connected to Ollama at {self.base_url}")
             else:
                 logger.warning(f"Ollama returned status {resp.status_code}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Could not connect to Ollama: {e}")
 
-    def chat(self, messages: list, tools: Optional[list] = None, **kwargs) -> dict:
+    def chat(self, messages: list, tools: list | None = None, **kwargs) -> dict:
         import requests
         payload = {
             "model": self.model,
@@ -41,7 +37,7 @@ class OllamaClient:
             resp = requests.post(f"{self.base_url}/api/chat", json=payload, timeout=300)
             resp.raise_for_status()
             return resp.json()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Chat API error: {e}")
             return {"message": {"content": f"Error: {e}"}, "done": True}
 
@@ -52,7 +48,7 @@ class OllamaClient:
             resp = requests.post(f"{self.base_url}/api/generate", json=payload, timeout=300)
             resp.raise_for_status()
             return resp.json()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Generate API error: {e}")
             return {"response": f"Error: {e}", "done": True}
 
@@ -61,7 +57,7 @@ class OllamaClient:
             import requests
             resp = requests.get(f"{self.base_url}/api/tags", timeout=10)
             return resp.json().get("models", [])
-        except:
+        except Exception:  # noqa: BLE001
             return []
 
 
@@ -97,7 +93,7 @@ class ToolRegistry:
             return f"Unknown tool: {name}"
         try:
             return self.tools[name].execute(arguments)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return f"Tool execution error: {e}"
 
 
@@ -106,7 +102,7 @@ class Agent:
         self.client = client
         self.registry = registry
         self.memory = memory
-        self.conversation = []
+        self.conversation: list = []
 
     def run(self, task: str, max_iterations: int = 10) -> str:
         self.conversation = [{"role": "user", "content": task}]
@@ -155,7 +151,7 @@ class MemoryStore:
     def save_episode(self, task: str, actions: list, result: str, metrics: dict):
         with open(self.episodes, "a") as f:
             f.write(json.dumps({
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "task": task,
                 "actions": actions,
                 "result": result,
@@ -165,7 +161,7 @@ class MemoryStore:
     def save_insight(self, insight: str, category: str):
         with open(self.insights, "a") as f:
             f.write(json.dumps({
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "insight": insight,
                 "category": category
             }) + "\n")
@@ -197,7 +193,7 @@ Respond in JSON format with keys: correctness, efficiency, quality, overall_scor
         response = self.client.generate(prompt)
         try:
             return json.loads(response.get("response", "{}"))
-        except:
+        except Exception:  # noqa: BLE001
             return {"overall_score": 5, "feedback": "Could not evaluate"}
 
     def suggest_improvements(self, task: str, output: str, evaluation: dict) -> str:
@@ -218,9 +214,9 @@ class VersionControl:
         self.snapshots = self.base_path / "snapshots"
         self.snapshots.mkdir(exist_ok=True)
 
-    def create_snapshot(self, label: str = None) -> str:
+    def create_snapshot(self, label: str | None = None) -> str:
         import shutil
-        label = label or datetime.now().strftime("%Y%m%d_%H%M%S")
+        label = label or datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         snapshot_path = self.snapshots / label
         
         for subdir in ["core", "tools", "eval"]:

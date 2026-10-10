@@ -1,17 +1,17 @@
 import json
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Optional
 
 
 class Benchmark:
-    def __init__(self, name: str, task: str, expected_output: Optional[str] = None, 
-                 validator: Optional[Callable] = None):
+    def __init__(self, name: str, task: str, expected_output: str | None = None, 
+                 validator: Callable | None = None):
         self.name = name
         self.task = task
         self.expected_output = expected_output
         self.validator = validator
-        self.results = []
+        self.results: list = []
 
     def validate(self, output: str) -> dict:
         if self.validator:
@@ -27,7 +27,7 @@ class Benchmark:
 class BenchmarkSuite:
     def __init__(self, suite_path: str = "D:/sl/projects/sllm/eval/benchmarks.json"):
         self.suite_path = Path(suite_path)
-        self.benchmarks = []
+        self.benchmarks: list = []
         self.results_path = self.suite_path.parent / "results.jsonl"
         self._load_benchmarks()
 

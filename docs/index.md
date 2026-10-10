@@ -94,7 +94,11 @@ python run.py
 - [Sentient Intelligence](sentient.md)
 - [Dual-Loop PDCA](dual-loop.md)
 
-## Links
+## References & Inspiration
+
+- [Research Papers](references/research.md) - Academic foundations
+
+### Links
 
 - [GitHub](https://github.com/nrupala/sllm)
 - [Issues](https://github.com/nrupala/sllm/issues)

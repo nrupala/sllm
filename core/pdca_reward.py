@@ -8,15 +8,13 @@ SL-LLM PDCA + Reward Learning System
 """
 
 import json
-import math
 import uuid
-from pathlib import Path
-from datetime import datetime
-from typing import List, Dict, Optional, Tuple
-from dataclasses import dataclass, field
 from collections import defaultdict
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import Enum
-
+from pathlib import Path
+from typing import ClassVar
 
 # ============================================================
 # PDCA PHASES
@@ -34,7 +32,7 @@ class PDCAStep:
     phase: PDCAPhase
     action: str
     result: str
-    metrics: Dict
+    metrics: dict
     timestamp: str
     success: bool
 
@@ -43,10 +41,10 @@ class PDCAStep:
 class PDCACycle:
     id: str
     objective: str
-    steps: List[PDCAStep]
+    steps: list[PDCAStep]
     overall_result: str
     reward: float
-    knowledge_gained: List[str]
+    knowledge_gained: list[str]
     timestamp: str
     duration_seconds: float = 0.0
 
@@ -58,8 +56,7 @@ class PDCACycle:
 class RewardDimensions:
     """Multi-dimensional reward signals"""
     
-    DIMENSIONS = {
-        "correctness": {
+    DIMENSIONS: ClassVar[dict] = {        "correctness": {
             "description": "Did the output achieve the goal correctly?",
             "weight": 0.35,
             "indicators": ["tests_passed", "no_errors", "expected_output"],
@@ -87,7 +84,7 @@ class RewardDimensions:
     }
     
     @classmethod
-    def compute_reward(cls, scores: Dict[str, float]) -> Tuple[float, Dict[str, float]]:
+    def compute_reward(cls, scores: dict[str, float]) -> tuple[float, dict[str, float]]:
         """Compute weighted reward from dimension scores (0.0-1.0 each)"""
         total = 0.0
         total_weight = 0.0
@@ -114,12 +111,12 @@ class RewardMemory:
     """Stores and analyzes reward history for learning"""
     
     def __init__(self, max_entries: int = 500):
-        self.entries: List[Dict] = []
+        self.entries: list[dict] = []
         self.max_entries = max_entries
         self.trend_window = 20
     
-    def record(self, task: str, reward: float, breakdown: Dict,
-               phase_results: Dict, knowledge_extracted: List[str]):
+    def record(self, task: str, reward: float, breakdown: dict,
+               phase_results: dict, knowledge_extracted: list[str]):
         """Record a reward entry"""
         entry = {
             "id": str(uuid.uuid4()),
@@ -128,14 +125,14 @@ class RewardMemory:
             "breakdown": breakdown,
             "phase_results": phase_results,
             "knowledge_extracted": knowledge_extracted,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         self.entries.append(entry)
         
         if len(self.entries) > self.max_entries:
             self.entries = self.entries[-self.max_entries:]
     
-    def get_average_reward(self, window: int = None) -> float:
+    def get_average_reward(self, window: int | None = None) -> float:
         """Get average reward over recent window"""
         w = window or self.trend_window
         recent = self.entries[-w:]
@@ -164,8 +161,8 @@ class RewardMemory:
         if not self.entries:
             return "unknown"
         
-        dim_totals = defaultdict(float)
-        dim_counts = defaultdict(int)
+        dim_totals: dict = defaultdict(float)
+        dim_counts: dict = defaultdict(int)
         
         for entry in self.entries[-self.trend_window:]:
             for dim, score in entry.get("breakdown", {}).items():
@@ -176,15 +173,15 @@ class RewardMemory:
             return "unknown"
         
         dim_averages = {dim: total / dim_counts[dim] for dim, total in dim_totals.items()}
-        return min(dim_averages, key=dim_averages.get)
+        return min(dim_averages, key=lambda d: dim_averages[d])
     
     def get_strongest_dimension(self) -> str:
         """Find the strongest reward dimension"""
         if not self.entries:
             return "unknown"
         
-        dim_totals = defaultdict(float)
-        dim_counts = defaultdict(int)
+        dim_totals: dict = defaultdict(float)
+        dim_counts: dict = defaultdict(int)
         
         for entry in self.entries[-self.trend_window:]:
             for dim, score in entry.get("breakdown", {}).items():
@@ -195,11 +192,11 @@ class RewardMemory:
             return "unknown"
         
         dim_averages = {dim: total / dim_counts[dim] for dim, total in dim_totals.items()}
-        return max(dim_averages, key=dim_averages.get)
+        return max(dim_averages, key=lambda d: dim_averages[d])
     
-    def get_top_learned_patterns(self, limit: int = 5) -> List[str]:
+    def get_top_learned_patterns(self, limit: int = 5) -> list[str]:
         """Get most frequently extracted knowledge patterns"""
-        pattern_counts = defaultdict(int)
+        pattern_counts: dict = defaultdict(int)
         for entry in self.entries:
             for pattern in entry.get("knowledge_extracted", []):
                 pattern_counts[pattern] += 1
@@ -207,7 +204,7 @@ class RewardMemory:
         sorted_patterns = sorted(pattern_counts.items(), key=lambda x: x[1], reverse=True)
         return [p for p, _ in sorted_patterns[:limit]]
     
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         """Get comprehensive reward statistics"""
         if not self.entries:
             return {"total_entries": 0}
@@ -227,7 +224,7 @@ class RewardMemory:
             "top_patterns": self.get_top_learned_patterns(),
         }
     
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "entries": self.entries[-100:],
             "stats": self.get_stats(),
@@ -241,11 +238,11 @@ class RewardMemory:
 class PDCAEngine:
     """Plan-Do-Check-Act continuous improvement engine"""
     
-    def __init__(self, reward_memory: RewardMemory = None):
+    def __init__(self, reward_memory: RewardMemory | None = None):
         self.reward_memory = reward_memory or RewardMemory()
-        self.active_cycles: List[PDCACycle] = []
-        self.completed_cycles: List[PDCACycle] = []
-        self.improvement_log: List[Dict] = []
+        self.active_cycles: list[PDCACycle] = []
+        self.completed_cycles: list[PDCACycle] = []
+        self.improvement_log: list[dict] = []
     
     def start_cycle(self, objective: str) -> str:
         """Start a new PDCA cycle"""
@@ -257,12 +254,12 @@ class PDCAEngine:
             overall_result="in_progress",
             reward=0.0,
             knowledge_gained=[],
-            timestamp=datetime.now().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
         )
         self.active_cycles.append(cycle)
         return cycle_id
     
-    def plan(self, cycle_id: str, task: str, context: Dict) -> Dict:
+    def plan(self, cycle_id: str, task: str, context: dict) -> dict:
         """PLAN: Analyze task, identify approach, set success criteria"""
         cycle = self._get_cycle(cycle_id)
         if not cycle:
@@ -294,14 +291,14 @@ class PDCAEngine:
             action=f"Planned approach: {strategy}",
             result=json.dumps(plan),
             metrics={"complexity": complexity, "risks_count": len(risks)},
-            timestamp=datetime.now().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             success=True,
         )
         cycle.steps.append(step)
         
         return plan
     
-    def do(self, cycle_id: str, execution_result: Dict) -> Dict:
+    def do(self, cycle_id: str, execution_result: dict) -> dict:
         """DO: Execute the plan and capture results"""
         cycle = self._get_cycle(cycle_id)
         if not cycle:
@@ -320,7 +317,7 @@ class PDCAEngine:
                 "elapsed": elapsed,
                 "output_length": len(output),
             },
-            timestamp=datetime.now().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             success=success,
         )
         cycle.steps.append(step)
@@ -332,7 +329,7 @@ class PDCAEngine:
         }
     
     def check(self, cycle_id: str, output: str, expected: str = "",
-              execution_output: str = "") -> Dict:
+              execution_output: str = "") -> dict:
         """CHECK: Evaluate results against success criteria"""
         cycle = self._get_cycle(cycle_id)
         if not cycle:
@@ -387,22 +384,22 @@ class PDCAEngine:
             action="Evaluated results",
             result=f"Reward: {reward:.2f}, Passed: {check_result['passed']}",
             metrics=scores,
-            timestamp=datetime.now().isoformat(),
-            success=check_result["passed"],
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            success=bool(check_result["passed"]),
         )
         cycle.steps.append(step)
         cycle.reward = reward
         
         return check_result
     
-    def act(self, cycle_id: str, check_result: Dict) -> Dict:
+    def act(self, cycle_id: str, check_result: dict) -> dict:
         """ACT: Apply improvements based on check results"""
         cycle = self._get_cycle(cycle_id)
         if not cycle:
             return {"error": "Cycle not found"}
         
         passed = check_result.get("passed", False)
-        weakest = check_result.get("breakdown", {})
+        check_result.get("breakdown", {})
         
         if passed:
             # Success: consolidate knowledge, reinforce successful patterns
@@ -420,7 +417,7 @@ class PDCAEngine:
             action=f"Applied {action} based on reward {cycle.reward:.2f}",
             result=json.dumps(improvements),
             metrics={"action": action, "reward": cycle.reward},
-            timestamp=datetime.now().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             success=passed,
         )
         cycle.steps.append(step)
@@ -430,7 +427,7 @@ class PDCAEngine:
             start = datetime.fromisoformat(cycle.timestamp)
             end = datetime.fromisoformat(step.timestamp)
             cycle.duration_seconds = (end - start).total_seconds()
-        except:
+        except Exception:  # noqa: S110, BLE001
             pass
         
         # Move to completed
@@ -445,7 +442,7 @@ class PDCAEngine:
             "result": cycle.overall_result,
             "reward": cycle.reward,
             "improvements": improvements,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         
         return {
@@ -455,7 +452,7 @@ class PDCAEngine:
             "reward": cycle.reward,
         }
     
-    def execute_full_cycle(self, task: str, execute_fn, context: Dict = None) -> Dict:
+    def execute_full_cycle(self, task: str, execute_fn, context: dict | None = None) -> dict:
         """Execute a complete PDCA cycle with automatic progression"""
         context = context or {}
         
@@ -490,7 +487,7 @@ class PDCAEngine:
     
     # --- Internal methods ---
     
-    def _get_cycle(self, cycle_id: str) -> Optional[PDCACycle]:
+    def _get_cycle(self, cycle_id: str) -> PDCACycle | None:
         for cycle in self.active_cycles:
             if cycle.id == cycle_id:
                 return cycle
@@ -519,7 +516,7 @@ class PDCAEngine:
         
         return complexity
     
-    def _identify_risks(self, task: str) -> List[str]:
+    def _identify_risks(self, task: str) -> list[str]:
         """Identify potential risks in the task"""
         risks = []
         task_lower = task.lower()
@@ -538,7 +535,7 @@ class PDCAEngine:
         
         return risks
     
-    def _define_success_criteria(self, task: str, complexity: float) -> List[str]:
+    def _define_success_criteria(self, task: str, complexity: float) -> list[str]:
         """Define what success looks like for this task"""
         criteria = ["produces_valid_output", "no_errors"]
         
@@ -551,7 +548,7 @@ class PDCAEngine:
         
         return criteria
     
-    def _select_strategy(self, task: str, context: Dict) -> str:
+    def _select_strategy(self, task: str, context: dict) -> str:
         """Select approach strategy based on reward history"""
         weakest = self.reward_memory.get_weakest_dimension()
         
@@ -667,7 +664,7 @@ class PDCAEngine:
         
         return min(1.0, max(0.0, score))
     
-    def _extract_knowledge(self, output: str, objective: str) -> List[str]:
+    def _extract_knowledge(self, output: str, objective: str) -> list[str]:
         """Extract knowledge patterns from output"""
         patterns = []
         
@@ -687,7 +684,7 @@ class PDCAEngine:
         
         return patterns
     
-    def _consolidate_learning(self, cycle: PDCACycle, check_result: Dict) -> Dict:
+    def _consolidate_learning(self, cycle: PDCACycle, check_result: dict) -> dict:
         """Consolidate learning from successful cycle"""
         improvements = {
             "knowledge_extracted": cycle.reward > 0.7,
@@ -703,7 +700,7 @@ class PDCAEngine:
         
         return improvements
     
-    def _plan_improvement(self, cycle: PDCACycle, check_result: Dict) -> Dict:
+    def _plan_improvement(self, cycle: PDCACycle, check_result: dict) -> dict:
         """Plan improvements for failed cycle"""
         weakest_dim = min(check_result.get("breakdown", {}),
                          key=check_result.get("breakdown", {}).get,
@@ -723,7 +720,7 @@ class PDCAEngine:
         
         return improvements
     
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         """Get PDCA engine status"""
         return {
             "active_cycles": len(self.active_cycles),
@@ -749,7 +746,7 @@ class PDCAEngine:
             ],
             "reward_memory": self.reward_memory.to_dict(),
             "improvement_log": self.improvement_log[-50:],
-            "saved_at": datetime.now().isoformat(),
+            "saved_at": datetime.now(timezone.utc).isoformat(),
         }
         
         path = Path(filepath)
@@ -767,9 +764,9 @@ class KnowledgeGraphGrowthManager:
     
     def __init__(self, kg_manager=None):
         self.kg_manager = kg_manager
-        self.growth_log: List[Dict] = []
+        self.growth_log: list[dict] = []
     
-    def process_cycle_result(self, cycle_result: Dict) -> Dict:
+    def process_cycle_result(self, cycle_result: dict) -> dict:
         """Process a PDCA cycle result and grow the knowledge graph"""
         reward = cycle_result.get("reward", 0)
         knowledge = cycle_result.get("knowledge_gained", [])
@@ -817,7 +814,7 @@ class KnowledgeGraphGrowthManager:
             "objective": objective,
             "reward": reward,
             "actions": growth_actions,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         
         return {
@@ -825,7 +822,7 @@ class KnowledgeGraphGrowthManager:
             "knowledge_added": len(growth_actions),
         }
     
-    def get_growth_stats(self) -> Dict:
+    def get_growth_stats(self) -> dict:
         """Get knowledge growth statistics"""
         if not self.growth_log:
             return {"total_growth_events": 0}
@@ -858,7 +855,7 @@ class PDCAPlusRewardSystem:
         # Load existing state
         self._load_state()
     
-    def run_cycle(self, task: str, execute_fn, context: Dict = None) -> Dict:
+    def run_cycle(self, task: str, execute_fn, context: dict | None = None) -> dict:
         """Run a complete PDCA + Reward cycle"""
         # Execute PDCA cycle
         cycle_result = self.pdca_engine.execute_full_cycle(task, execute_fn, context)
@@ -875,7 +872,7 @@ class PDCAPlusRewardSystem:
             "reward_stats": self.reward_memory.get_stats(),
         }
     
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         """Get complete system status"""
         return {
             "pdca": self.pdca_engine.get_status(),
@@ -919,7 +916,7 @@ class PDCAPlusRewardSystem:
                     self.pdca_engine.improvement_log = data["improvement_log"]
                 
                 print(f"PDCA+Reward state loaded: {len(self.reward_memory.entries)} entries")
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"Could not load PDCA state: {e}")
 
 

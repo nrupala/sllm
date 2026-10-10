@@ -136,10 +136,12 @@ Timestamp: 2026-03-31T17:56:39
 - **Gödel Agent** (arXiv:2410.04444) - Self-referential agent framework for recursive self-improvement [1]
 - **Meta-Prompting** - Language models using their own outputs as prompts for improvement [2]
 - **Retrieval-Augmented Generation (RAG)** - Memory retrieval for context [3]
+- **OpenCode** (github.com/anomalyco/opencode) - Agent architecture inspiration [4]
 
 [1] https://arxiv.org/abs/2410.04444
 [2] https://arxiv.org/abs/2405.18392
 [3] https://arxiv.org/abs/2005.11401
+[4] https://github.com/anomalyco/opencode
 
 ### Viewing the Knowledge Graph
 
@@ -167,5 +169,7 @@ MIT License - see [LICENSE](LICENSE).
 ## 🔗 Links
 
 - [Documentation](HELP.md)
+- [Skills](docs/skills.md) - Complete skill inventory
+- [References](docs/references/research.md) - Research sources
 - [Issues](https://github.com/nrupala/sllm/issues)
 - [Discussions](https://github.com/nrupala/sllm/discussions)

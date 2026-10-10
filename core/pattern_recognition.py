@@ -4,11 +4,9 @@ SL-LLM Design Pattern Recognition System
 - Factory, Singleton, Observer, Strategy, Adapter, Decorator, etc.
 """
 
-import re
-import ast
-from typing import List, Dict, Optional, Set, Tuple
 from dataclasses import dataclass
 from enum import Enum
+from typing import ClassVar
 
 
 class PatternType(Enum):
@@ -23,16 +21,15 @@ class DesignPattern:
     name: str
     category: PatternType
     description: str
-    indicators: List[str]
+    indicators: list[str]
     code_snippet: str
-    benefits: List[str]
+    benefits: list[str]
 
 
 class DesignPatternLibrary:
     """Library of recognized design patterns"""
     
-    PATTERNS = {
-        "singleton": DesignPattern(
+    PATTERNS: ClassVar[dict] = {        "singleton": DesignPattern(
             name="Singleton",
             category=PatternType.CREATIONAL,
             description="Ensure a class has only one instance",
@@ -174,8 +171,7 @@ class Prototype:
         ),
     }
     
-    ANTIPATTERNS = {
-        "god_object": DesignPattern(
+    ANTIPATTERNS: ClassVar[dict] = {        "god_object": DesignPattern(
             name="God Object",
             category=PatternType.ANTIPATTERN,
             description="Class doing too much",
@@ -210,9 +206,9 @@ class PatternRecognizer:
     def __init__(self):
         self.library = DesignPatternLibrary()
     
-    def analyze_code(self, code: str) -> Dict:
+    def analyze_code(self, code: str) -> dict:
         """Analyze code and identify patterns"""
-        results = {
+        results: dict = {
             "patterns_found": [],
             "antipatterns_found": [],
             "recommendations": [],
@@ -222,7 +218,7 @@ class PatternRecognizer:
         code_lower = code.lower()
         
         # Check for known patterns
-        for pattern_name, pattern in self.library.PATTERNS.items():
+        for pattern in self.library.PATTERNS.values():
             match_count = sum(1 for ind in pattern.indicators if ind in code_lower)
             if match_count >= 1:
                 results["patterns_found"].append({
@@ -233,7 +229,7 @@ class PatternRecognizer:
                 })
         
         # Check for antipatterns
-        for antipattern_name, antipattern in self.library.ANTIPATTERNS.items():
+        for antipattern in self.library.ANTIPATTERNS.values():
             if any(ind in code_lower for ind in antipattern.indicators):
                 results["antipatterns_found"].append({
                     "name": antipattern.name,
@@ -256,7 +252,7 @@ class PatternRecognizer:
         
         return results
     
-    def suggest_pattern(self, problem_description: str) -> Optional[Dict]:
+    def suggest_pattern(self, problem_description: str) -> dict | None:
         """Suggest appropriate pattern for a problem"""
         problem_lower = problem_description.lower()
         

@@ -6,17 +6,15 @@ SL-LLM Zero-Trust Security Module
 - Secure by Default
 """
 
+import base64
 import hashlib
 import hmac
-import secrets
-import base64
 import json
-import os
-from datetime import datetime
-from typing import Dict, List, Optional, Tuple
-from pathlib import Path
+import secrets
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import Enum
+from pathlib import Path
 
 
 class TrustLevel(Enum):
@@ -38,25 +36,25 @@ class SecurityContext:
     session_id: str
     trust_level: TrustLevel = TrustLevel.UNTRUSTED
     encryption_mode: EncryptionMode = EncryptionMode.NONE
-    created_at: str = field(default_factory=lambda: datetime.now().isoformat())
-    last_verified: Optional[str] = None
-    integrity_hash: Optional[str] = None
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    last_verified: str | None = None
+    integrity_hash: str | None = None
 
 
 class ZeroTrustManager:
     """Zero-Trust Security Manager"""
     
     def __init__(self):
-        self.sessions: Dict[str, SecurityContext] = {}
-        self.trust_policies: Dict[str, bool] = {
+        self.sessions: dict[str, SecurityContext] = {}
+        self.trust_policies: dict[str, bool] = {
             "verify_every_request": True,
             "require_encryption": False,
             "audit_all_operations": True,
             "deny_by_default": True,
             "minimize_privilege": True,
         }
-        self.failed_attempts: Dict[str, int] = {}
-        self.blocked_principals: List[str] = []
+        self.failed_attempts: dict[str, int] = {}
+        self.blocked_principals: list[str] = []
     
     def create_session(self, principal: str) -> SecurityContext:
         """Create new zero-trust session"""
@@ -68,7 +66,7 @@ class ZeroTrustManager:
         self.sessions[session_id] = ctx
         return ctx
     
-    def verify_principal(self, principal: str, credentials: Dict) -> TrustLevel:
+    def verify_principal(self, principal: str, credentials: dict) -> TrustLevel:
         """Verify principal identity (zero-trust)"""
         # Always verify - never trust by default
         if principal in self.blocked_principals:
@@ -98,7 +96,7 @@ class ZeroTrustManager:
         else:
             return TrustLevel.UNTRUSTED
     
-    def _verify_credentials(self, credentials: Dict) -> bool:
+    def _verify_credentials(self, credentials: dict) -> bool:
         """Verify credentials"""
         return bool(credentials.get("token"))
     
@@ -115,7 +113,7 @@ class ZeroTrustManager:
         """Update trust level after verification"""
         if session_id in self.sessions:
             self.sessions[session_id].trust_level = level
-            self.sessions[session_id].last_verified = datetime.now().isoformat()
+            self.sessions[session_id].last_verified = datetime.now(timezone.utc).isoformat()
     
     def block_principal(self, principal: str):
         """Block untrusted principal"""
@@ -128,7 +126,7 @@ class ZeroTrustManager:
         if self.failed_attempts[principal] >= 5:
             self.block_principal(principal)
     
-    def get_audit_log(self) -> List[Dict]:
+    def get_audit_log(self) -> list[dict]:
         """Get security audit log"""
         return [
             {"policy": k, "enabled": v}
@@ -139,7 +137,7 @@ class ZeroTrustManager:
 class ZeroKnowledgeCryptographer:
     """Zero-Knowledge Encryption System"""
     
-    def __init__(self, key: Optional[bytes] = None):
+    def __init__(self, key: bytes | None = None):
         self.key = key or secrets.token_bytes(32)  # 256-bit key
         self.nonce = secrets.token_bytes(16)
     
@@ -166,7 +164,7 @@ class ZeroKnowledgeCryptographer:
             key_stream = self._generate_keystream(len(ciphertext_bytes))
             plaintext = bytes(a ^ b for a, b in zip(ciphertext_bytes, key_stream))
             return plaintext.decode('utf-8')
-        except:
+        except Exception:  # noqa: BLE001
             return "[DECRYPTION_FAILED]"
     
     def _generate_keystream(self, length: int) -> bytes:
@@ -189,12 +187,12 @@ class ZeroKnowledgeCryptographer:
         expected = hmac.new(self.key, data.encode(), hashlib.sha256).hexdigest()
         return hmac.compare_digest(expected, signature)
     
-    def create_verifiable_secret(self, secret: str) -> Dict:
+    def create_verifiable_secret(self, secret: str) -> dict:
         """Create zero-knowledge verifiable secret"""
         return {
             "hash": self.hash_data(secret),
             "signature": self.hmac_sign(secret),
-            "created": datetime.now().isoformat()
+            "created": datetime.now(timezone.utc).isoformat()
         }
 
 
@@ -214,7 +212,7 @@ class SecureStorage:
         file_path = self.storage_path / f"{key}.enc"
         file_path.write_text(data, encoding='utf-8')
     
-    def retrieve_secure(self, key: str, decrypt: bool = True) -> Optional[str]:
+    def retrieve_secure(self, key: str, decrypt: bool = True) -> str | None:
         """Retrieve encrypted data"""
         file_path = self.storage_path / f"{key}.enc"
         if not file_path.exists():
@@ -233,13 +231,13 @@ class SecureStorage:
         record = {
             "encrypted": encrypted,
             "signature": signature,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
         file_path = self.storage_path / f"{key}.json"
         file_path.write_text(json.dumps(record, indent=2), encoding='utf-8')
     
-    def retrieve_with_verification(self, key: str) -> Optional[str]:
+    def retrieve_with_verification(self, key: str) -> str | None:
         """Retrieve and verify integrity"""
         file_path = self.storage_path / f"{key}.json"
         if not file_path.exists():
@@ -266,12 +264,12 @@ class SecurityAuditor:
     """Comprehensive security auditing"""
     
     def __init__(self):
-        self.audit_log: List[Dict] = []
+        self.audit_log: list[dict] = []
     
-    def log_operation(self, operation: str, principal: str, result: str, metadata: Dict = None):
+    def log_operation(self, operation: str, principal: str, result: str, metadata: dict | None = None):
         """Log security-relevant operation"""
         entry = {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "operation": operation,
             "principal": principal,
             "result": result,
@@ -306,7 +304,7 @@ class SecurityAuditor:
             {}
         )
     
-    def get_security_report(self) -> Dict:
+    def get_security_report(self) -> dict:
         """Generate security report"""
         return {
             "total_operations": len(self.audit_log),
@@ -315,21 +313,21 @@ class SecurityAuditor:
             "policies_enforced": self._get_policies()
         }
     
-    def _count_by_operation(self) -> Dict:
-        counts = {}
+    def _count_by_operation(self) -> dict:
+        counts: dict = {}
         for entry in self.audit_log:
             op = entry["operation"]
             counts[op] = counts.get(op, 0) + 1
         return counts
     
-    def _count_by_result(self) -> Dict:
-        counts = {}
+    def _count_by_result(self) -> dict:
+        counts: dict = {}
         for entry in self.audit_log:
             result = entry["result"]
             counts[result] = counts.get(result, 0) + 1
         return counts
     
-    def _get_policies(self) -> List[str]:
+    def _get_policies(self) -> list[str]:
         return ["verify_every_request", "audit_all_operations", "deny_by_default"]
 
 

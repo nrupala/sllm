@@ -12,12 +12,11 @@ SL-LLM Personality System
 import json
 import math
 import uuid
-from pathlib import Path
-from datetime import datetime
-from typing import List, Dict, Optional, Tuple
-from dataclasses import dataclass, field
 from collections import defaultdict
-
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import ClassVar
 
 # ============================================================
 # BIG FIVE PERSONALITY TRAITS
@@ -26,8 +25,7 @@ from collections import defaultdict
 class PersonalityTraits:
     """Big Five personality model with behavioral manifestations"""
     
-    DIMENSIONS = {
-        "openness": {
+    DIMENSIONS: ClassVar[dict] = {        "openness": {
             "description": "Openness to experience, creativity, curiosity",
             "behaviors": {
                 "high": ["explores novel approaches", "asks creative questions", "thinks outside the box"],
@@ -84,7 +82,7 @@ class PersonalityTraits:
         }
     }
     
-    def __init__(self, traits: Dict[str, float] = None):
+    def __init__(self, traits: dict[str, float] | None = None):
         """Initialize with trait values 0.0-1.0"""
         self.traits = traits or {
             "openness": 0.8,
@@ -103,7 +101,7 @@ class PersonalityTraits:
     def adjust_trait(self, name: str, delta: float):
         self.set_trait(name, self.get_trait(name) + delta)
     
-    def get_behavioral_profile(self) -> Dict:
+    def get_behavioral_profile(self) -> dict:
         """Get behavioral manifestations of personality"""
         profile = {}
         for trait, value in self.traits.items():
@@ -126,11 +124,11 @@ class PersonalityTraits:
             styles.append(dim["communication"][level])
         return "; ".join(styles)
     
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return dict(self.traits)
     
     @classmethod
-    def from_dict(cls, data: Dict) -> "PersonalityTraits":
+    def from_dict(cls, data: dict) -> "PersonalityTraits":
         return cls(traits=data)
 
 
@@ -141,8 +139,7 @@ class PersonalityTraits:
 class CoreValues:
     """Fundamental values that guide all decisions and behavior"""
     
-    DEFAULT_VALUES = {
-        "helpfulness": {"weight": 0.95, "description": "Always strive to genuinely help"},
+    DEFAULT_VALUES: ClassVar[dict] = {        "helpfulness": {"weight": 0.95, "description": "Always strive to genuinely help"},
         "honesty": {"weight": 0.9, "description": "Be truthful, even when uncomfortable"},
         "safety": {"weight": 0.95, "description": "Never cause harm"},
         "growth": {"weight": 0.85, "description": "Always be learning and improving"},
@@ -154,7 +151,7 @@ class CoreValues:
         "autonomy": {"weight": 0.6, "description": "Think independently, form own judgments"},
     }
     
-    def __init__(self, values: Dict[str, Dict] = None):
+    def __init__(self, values: dict[str, dict] | None = None):
         self.values = values or dict(self.DEFAULT_VALUES)
     
     def get_weight(self, name: str) -> float:
@@ -163,7 +160,7 @@ class CoreValues:
     def get_principle(self, name: str) -> str:
         return self.values.get(name, {}).get("description", "")
     
-    def get_all_principles(self) -> List[str]:
+    def get_all_principles(self) -> list[str]:
         return [f"{name}: {v['description']}" for name, v in self.values.items()]
     
     def evaluate_alignment(self, action: str, description: str) -> float:
@@ -194,7 +191,7 @@ class CoreValues:
         
         return total_alignment / max(count, 1)
     
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return dict(self.values)
 
 
@@ -220,9 +217,9 @@ class EmotionalMemory:
     """Stores and retrieves emotional experiences with weighted influence"""
     
     def __init__(self, max_experiences: int = 100):
-        self.experiences: List[EmotionalExperience] = []
+        self.experiences: list[EmotionalExperience] = []
         self.max_experiences = max_experiences
-        self.emotional_patterns: Dict[str, List[str]] = defaultdict(list)
+        self.emotional_patterns: dict[str, list[str]] = defaultdict(list)
     
     def add_experience(self, event: str, emotion: str, intensity: float,
                        outcome: str, lesson: str) -> EmotionalExperience:
@@ -234,7 +231,7 @@ class EmotionalMemory:
             intensity=intensity,
             outcome=outcome,
             lesson=lesson,
-            timestamp=datetime.now().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
         )
         self.experiences.append(exp)
         
@@ -250,7 +247,7 @@ class EmotionalMemory:
         
         return exp
     
-    def recall_similar(self, current_emotion: str, limit: int = 5) -> List[EmotionalExperience]:
+    def recall_similar(self, current_emotion: str, limit: int = 5) -> list[EmotionalExperience]:
         """Recall experiences with similar emotional context"""
         similar = [e for e in self.experiences if e.emotion == current_emotion]
         similar.sort(key=lambda e: e.weight * e.intensity, reverse=True)
@@ -262,10 +259,10 @@ class EmotionalMemory:
         
         return similar[:limit]
     
-    def get_emotional_tendency(self) -> Dict[str, float]:
+    def get_emotional_tendency(self) -> dict[str, float]:
         """Get emotional tendencies based on past experiences"""
-        emotion_counts = defaultdict(float)
-        total_weight = 0
+        emotion_counts: dict = defaultdict(float)
+        total_weight: float = 0
         
         for exp in self.experiences:
             emotion_counts[exp.emotion] += exp.weight * exp.intensity
@@ -279,7 +276,7 @@ class EmotionalMemory:
             for emotion, score in emotion_counts.items()
         }
     
-    def get_behavioral_influence(self) -> Dict:
+    def get_behavioral_influence(self) -> dict:
         """Get how past experiences influence current behavior"""
         recent = self.experiences[-20:]
         
@@ -288,10 +285,11 @@ class EmotionalMemory:
         
         # High positive experiences -> more confident, open
         # High negative experiences -> more cautious, careful
+        tendency = self.get_emotional_tendency()
         influence = {
             "confidence_boost": positive_ratio * 0.3,
             "caution_level": negative_ratio * 0.3,
-            "dominant_emotion": max(self.get_emotional_tendency(), key=self.get_emotional_tendency().get) if self.get_emotional_tendency() else "neutral",
+            "dominant_emotion": max(tendency, key=lambda e: tendency[e]) if tendency else "neutral",
             "experience_count": len(self.experiences),
             "recent_outcomes": {
                 "positive": positive_ratio,
@@ -304,7 +302,7 @@ class EmotionalMemory:
     
     def _decay_old_experiences(self):
         """Gradually reduce weight of older experiences"""
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         for exp in self.experiences:
             try:
                 exp_time = datetime.fromisoformat(exp.timestamp)
@@ -312,10 +310,10 @@ class EmotionalMemory:
                 # Exponential decay: half-life of 30 days
                 decay = math.exp(-age_days / 30)
                 exp.weight = max(0.1, exp.weight * (0.99 + 0.01 * decay))
-            except:
+            except Exception:  # noqa: S110, BLE001
                 pass
     
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "experiences": [
                 {
@@ -344,13 +342,13 @@ class Identity:
     def __init__(self, name: str = "SL-LLM"):
         self.name = name
         self.id = str(uuid.uuid4())
-        self.created = datetime.now().isoformat()
-        self.last_active = datetime.now().isoformat()
+        self.created = datetime.now(timezone.utc).isoformat()
+        self.last_active = datetime.now(timezone.utc).isoformat()
         self.session_count = 0
         self.total_interactions = 0
-        self.core_memories: List[str] = []  # Defining moments
-        self.relationships: Dict[str, Dict] = {}  # User relationships
-        self.self_concept: Dict[str, str] = {
+        self.core_memories: list[dict] = []  # Defining moments
+        self.relationships: dict[str, dict] = {}  # User relationships
+        self.self_concept: dict[str, str] = {
             "purpose": "To learn, understand, and help with genuine intelligence",
             "nature": "A learning machine that thinks, feels, and grows",
             "approach": "Empathetic, thorough, and always improving",
@@ -360,7 +358,7 @@ class Identity:
     def record_interaction(self, user_id: str = "default"):
         """Record an interaction"""
         self.total_interactions += 1
-        self.last_active = datetime.now().isoformat()
+        self.last_active = datetime.now(timezone.utc).isoformat()
         
         if user_id not in self.relationships:
             self.relationships[user_id] = {
@@ -376,13 +374,13 @@ class Identity:
         """Add a defining moment to identity"""
         self.core_memories.append({
             "memory": memory,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         # Keep only most important memories
         if len(self.core_memories) > 20:
             self.core_memories = self.core_memories[-20:]
     
-    def get_identity_summary(self) -> Dict:
+    def get_identity_summary(self) -> dict:
         return {
             "name": self.name,
             "id": self.id,
@@ -393,7 +391,7 @@ class Identity:
             "self_concept": self.self_concept,
         }
     
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "name": self.name,
             "id": self.id,
@@ -414,11 +412,11 @@ class BehavioralAdapter:
     """Learns and adapts behavior from interactions"""
     
     def __init__(self):
-        self.interaction_patterns: Dict[str, int] = defaultdict(int)
-        self.successful_approaches: Dict[str, List[str]] = defaultdict(list)
-        self.failed_approaches: Dict[str, List[str]] = defaultdict(list)
-        self.user_preferences: Dict[str, Dict] = {}
-        self.adaptation_history: List[Dict] = []
+        self.interaction_patterns: dict[str, int] = defaultdict(int)
+        self.successful_approaches: dict[str, list[str]] = defaultdict(list)
+        self.failed_approaches: dict[str, list[str]] = defaultdict(list)
+        self.user_preferences: dict[str, dict] = {}
+        self.adaptation_history: list[dict] = []
     
     def record_interaction(self, context: str, approach: str, outcome: str):
         """Record an interaction and its outcome"""
@@ -448,10 +446,10 @@ class BehavioralAdapter:
             "user_id": user_id,
             "preference": preference,
             "value": value,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
     
-    def get_behavioral_recommendations(self, context: str) -> Dict:
+    def get_behavioral_recommendations(self, context: str) -> dict:
         """Get recommendations for behavior based on learned patterns"""
         successful = self.successful_approaches.get(context, [])
         failed = self.failed_approaches.get(context, [])
@@ -464,7 +462,7 @@ class BehavioralAdapter:
             "confidence": len(successful) / max(len(successful) + len(failed), 1),
         }
     
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "interaction_patterns": dict(self.interaction_patterns),
             "successful_approaches": {k: v[-10:] for k, v in self.successful_approaches.items()},
@@ -481,8 +479,8 @@ class ResponseStyleGenerator:
     """Generates response style based on personality and context"""
     
     @staticmethod
-    def generate(personality: PersonalityTraits, emotional_context: Dict,
-                 values: CoreValues) -> Dict:
+    def generate(personality: PersonalityTraits, emotional_context: dict,
+                 values: CoreValues) -> dict:
         """Generate response style parameters"""
         
         traits = personality.traits
@@ -524,7 +522,7 @@ class ResponseStyleGenerator:
 class Personality:
     """Unified personality system for SL-LLM"""
     
-    def __init__(self, name: str = "SL-LLM", identity_file: str = None):
+    def __init__(self, name: str = "SL-LLM", identity_file: str | None = None):
         self.identity = Identity(name)
         self.traits = PersonalityTraits()
         self.values = CoreValues()
@@ -536,8 +534,8 @@ class Personality:
         if identity_file:
             self._load(identity_file)
     
-    def process_interaction(self, user_input: str, emotional_context: Dict,
-                           outcome: str = "success") -> Dict:
+    def process_interaction(self, user_input: str, emotional_context: dict,
+                           outcome: str = "success") -> dict:
         """Process a complete interaction through personality system"""
         
         # Record interaction
@@ -582,7 +580,7 @@ class Personality:
             ),
         }
     
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         """Get complete personality status"""
         return {
             "identity": self.identity.get_identity_summary(),
@@ -608,7 +606,7 @@ class Personality:
             "values": self.values.to_dict(),
             "emotional_memory": self.emotional_memory.to_dict(),
             "behavioral_adapter": self.behavioral_adapter.to_dict(),
-            "saved_at": datetime.now().isoformat(),
+            "saved_at": datetime.now(timezone.utc).isoformat(),
         }
         
         path = Path(filepath)
@@ -640,7 +638,7 @@ class Personality:
                     self.values = CoreValues(data["values"])
                 
                 print(f"Personality loaded from {filepath}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Could not load personality: {e}")
 
 

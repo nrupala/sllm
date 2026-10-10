@@ -1,0 +1,18 @@
+{"timestamp": "2026-03-31T17:48:47.811626", "insight": "Use faster algorithm", "category": "performance"}
+{"timestamp": "2026-03-31T17:48:55.543281", "insight": "Use faster algorithm", "category": "performance"}
+{"timestamp": "2026-03-31T17:49:11.620457", "insight": "Use faster algorithm", "category": "performance"}
+{"timestamp": "2026-03-31T17:49:58.409119", "insight": "Use faster algorithm", "category": "performance"}
+{"timestamp": "2026-03-31T17:55:44.241350", "insight": "Always check for division by zero before performing division", "category": "bug_fix"}
+{"timestamp": "2026-03-31T17:56:05.269287", "insight": "Always check for division by zero before performing division", "category": "bug_fix"}
+{"timestamp": "2026-03-31T17:56:24.206769", "insight": "Always check for division by zero before performing division", "category": "bug_fix"}
+{"timestamp": "2026-03-31T17:56:39.322624", "insight": "Always check for division by zero before performing division", "category": "bug_fix"}
+{"timestamp": "2026-03-31T18:08:51.415222", "insight": "Always check for division by zero before performing division", "category": "bug_fix"}
+{"timestamp": "2026-03-31T18:12:36.218958", "insight": "Always check for division by zero before performing division", "category": "bug_fix"}
+{"timestamp": "2026-03-31T19:09:27.635098", "insight": "Always check for division by zero before performing division", "category": "bug_fix"}
+{"timestamp": "2026-03-31T19:17:51.160797", "insight": "Always check for division by zero before performing division", "category": "bug_fix"}
+{"timestamp": "2026-03-31T19:20:52.177363", "insight": "Witnessed error: \n[STDERR]\nTraceback (most recent call last):\n  File \"C:\\Users\\nrupa\\AppData\\Loca. Fix: Add zero-check before division.", "category": "bug_fix_witnessed"}
+{"timestamp": "2026-03-31T19:22:09.880156", "insight": "Witnessed error: \n[STDERR]\nTraceback (most recent call last):\n  File \"C:\\Users\\nrupa\\AppData\\Loca. Fix: Add zero-check before division.", "category": "bug_fix_witnessed"}
+{"timestamp": "2026-03-31T19:43:06.747851", "insight": "Witnessed error: \n[STDERR]\nTraceback (most recent call last):\n  File \"C:\\Users\\nrupa\\AppData\\Loca. Fix: Add zero-check before division.", "category": "bug_fix_witnessed"}
+{"timestamp": "2026-04-01T00:14:29.938526", "insight": "Use faster algorithm", "category": "performance"}
+{"timestamp": "2026-04-01T00:14:30.495938", "insight": "Always check for division by zero before performing division", "category": "bug_fix"}
+{"timestamp": "2026-04-01T00:14:31.275727", "insight": "Witnessed error: \n[STDERR]\nTraceback (most recent call last):\n  File \"C:\\Users\\nrupa\\AppData\\Loca. Fix: Add zero-check before division.", "category": "bug_fix_witnessed"}

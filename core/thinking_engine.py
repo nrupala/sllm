@@ -4,31 +4,29 @@ Integrates: Psychology, Critical Thinking, Logic, Graph Theory,
             String Theory, Financial Mathematics, Calculus
 """
 
-import re
 import math
-import json
-from typing import List, Dict, Optional, Tuple, Set
+import re
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class ThinkingToolbox:
     """Human thinking methodologies for AI reasoning"""
     
     @staticmethod
-    def lateral_thinking(problem: str) -> List[str]:
+    def lateral_thinking(problem: str) -> list[str]:
         """Generate alternative perspectives (psychology-based)"""
         perspectives = [
             f"What if {problem} is actually the opposite?",
             f"What would a child ask about {problem}?",
             f"How would a competitor solve {problem}?",
-            f"What constraints am I assuming that might be false?",
-            f"What would happen if I reversed the sequence?",
+            "What constraints am I assuming that might be false?",
+            "What would happen if I reversed the sequence?",
         ]
         return perspectives
     
     @staticmethod
-    def first_principles(problem: str) -> Dict:
+    def first_principles(problem: str) -> dict:
         """Break down to fundamental truths"""
         return {
             "core_question": f"What is the essential nature of {problem}?",
@@ -38,12 +36,12 @@ class ThinkingToolbox:
         }
     
     @staticmethod
-    def inversion_thinking(goal: str) -> List[str]:
+    def inversion_thinking(goal: str) -> list[str]:
         """Think backwards from failure"""
         return [
             f"How would I definitely FAIL at {goal}?",
             f"What would make {goal} impossible?",
-            f"What worst-case scenarios exist?",
+            "What worst-case scenarios exist?",
         ]
 
 
@@ -51,7 +49,7 @@ class CriticalThinking:
     """Logic and reasoning framework"""
     
     @staticmethod
-    def evaluate_evidence(claim: str, evidence: List[str]) -> Dict:
+    def evaluate_evidence(claim: str, evidence: list[str]) -> dict:
         """Evaluate claim strength"""
         strength = len(evidence)
         logical_connections = sum(1 for e in evidence if any(w in e.lower() for w in ["because", "therefore", "thus", "hence"]))
@@ -65,7 +63,7 @@ class CriticalThinking:
         }
     
     @staticmethod
-    def spot_fallacies(arguments: List[str]) -> List[Dict]:
+    def spot_fallacies(arguments: list[str]) -> list[dict]:
         """Detect logical fallacies"""
         fallacies = []
         
@@ -85,7 +83,7 @@ class CriticalThinking:
         return fallacies
     
     @staticmethod
-    def syllogism(premise1: str, premise2: str) -> Dict:
+    def syllogism(premise1: str, premise2: str) -> dict:
         """Classic logic syllogism"""
         return {
             "premise_1": premise1,
@@ -100,20 +98,20 @@ class GraphTheoryReasoner:
     """Graph-based reasoning for relationships"""
     
     def __init__(self):
-        self.nodes: Set[str] = set()
-        self.edges: Dict[str, List[str]] = defaultdict(list)
-        self.weights: Dict[Tuple[str, str], float] = {}
+        self.nodes: set[str] = set()
+        self.edges: dict[str, list[str]] = defaultdict(list)
+        self.weights: dict[tuple[str, str], float] = {}
     
-    def add_concept(self, concept: str, related: List[str], weight: float = 1.0):
+    def add_concept(self, concept: str, related: list[str], weight: float = 1.0):
         """Add concept to reasoning graph"""
         self.nodes.add(concept)
         for r in related:
             self.nodes.add(r)
             self.edges[concept].append(r)
             self.edges[r].append(concept)
-            self.edges[(concept, r)] = [weight]
+            self.weights[(concept, r)] = weight
     
-    def find_path(self, start: str, end: str) -> Optional[List[str]]:
+    def find_path(self, start: str, end: str) -> list[str] | None:
         """BFS path finding - relationships between concepts"""
         if start not in self.nodes or end not in self.nodes:
             return None
@@ -155,9 +153,9 @@ class StringPatternMatcher:
     """String theory-inspired pattern matching"""
     
     @staticmethod
-    def find_recurring_patterns(text: str, min_length: int = 3) -> List[Dict]:
+    def find_recurring_patterns(text: str, min_length: int = 3) -> list[dict]:
         """Find repeating string patterns"""
-        patterns = defaultdict(int)
+        patterns: dict = defaultdict(int)
         
         for length in range(min_length, len(text) // 2):
             for i in range(len(text) - length):
@@ -180,7 +178,7 @@ class StringPatternMatcher:
         if len(s2) == 0:
             return len(s1)
         
-        previous_row = range(len(s2) + 1)
+        previous_row: list[int] = list(range(len(s2) + 1))
         
         for i, c1 in enumerate(s1):
             current_row = [i + 1]
@@ -199,7 +197,7 @@ class StringPatternMatcher:
         if not text:
             return 0.0
         
-        freq = defaultdict(int)
+        freq: dict = defaultdict(int)
         for c in text:
             freq[c] += 1
         
@@ -217,7 +215,7 @@ class FinancialMathematics:
     """Financial math for decision making"""
     
     @staticmethod
-    def expected_value(outcomes: List[Tuple[float, float]]) -> float:
+    def expected_value(outcomes: list[tuple[float, float]]) -> float:
         """Calculate expected value: Σ(probability * value)"""
         return sum(prob * value for prob, value in outcomes)
     
@@ -237,7 +235,7 @@ class FinancialMathematics:
         return future_value / math.pow(1 + rate, periods)
     
     @staticmethod
-    def decision_matrix(criteria: Dict[str, float], weights: Dict[str, float]) -> float:
+    def decision_matrix(criteria: dict[str, float], weights: dict[str, float]) -> float:
         """Weighted decision scoring"""
         score = 0.0
         for criterion, value in criteria.items():
@@ -249,7 +247,7 @@ class CalculusReasoner:
     """Calculus for optimization and change"""
     
     @staticmethod
-    def analyze_change(values: List[float]) -> Dict:
+    def analyze_change(values: list[float]) -> dict:
         """Analyze rate of change"""
         if len(values) < 2:
             return {"error": "Insufficient data"}
@@ -274,13 +272,13 @@ class CalculusReasoner:
             try:
                 gradient = gradient_fn(current)
                 current -= learning_rate * gradient
-            except:
+            except Exception:  # noqa: BLE001
                 break
         
         return current
     
     @staticmethod
-    def convergence_test(sequence: List[float], tolerance: float = 0.001) -> bool:
+    def convergence_test(sequence: list[float], tolerance: float = 0.001) -> bool:
         """Test if sequence converges"""
         if len(sequence) < 2:
             return False
@@ -292,7 +290,7 @@ class CalculusReasoner:
         return True
     
     @staticmethod
-    def area_approximation(values: List[float], dx: float = 1.0) -> float:
+    def area_approximation(values: list[float], dx: float = 1.0) -> float:
         """Riemann sum approximation"""
         return sum(v * dx for v in values)
 
@@ -308,7 +306,7 @@ class ReasoningEngine:
         self.finance = FinancialMathematics()
         self.calculus = CalculusReasoner()
     
-    def reason(self, problem: str, context: Dict = None) -> Dict:
+    def reason(self, problem: str, context: dict | None = None) -> dict:
         """Multi-disciplinary reasoning on a problem"""
         
         # Lateral thinking perspectives
@@ -325,10 +323,10 @@ class ReasoningEngine:
             "lateral_perspectives": perspectives,
             "first_principles": first_principles,
             "inversion_thinking": inversion,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
     
-    def analyze_code_quality(self, code: str) -> Dict:
+    def analyze_code_quality(self, code: str) -> dict:
         """Analyze code using multiple metrics"""
         
         # Pattern detection
@@ -349,7 +347,7 @@ class ReasoningEngine:
             "quality_score": min(100, max(0, 100 - entropy * 10))
         }
     
-    def make_decision(self, options: List[Dict], criteria: Dict[str, float]) -> Dict:
+    def make_decision(self, options: list[dict], criteria: dict[str, float]) -> dict:
         """Make decision using financial math and logic"""
         
         scored_options = []

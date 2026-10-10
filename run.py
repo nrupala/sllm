@@ -9,11 +9,9 @@ SL-LLM Entry Point with Full Cognitive Integration
 Usage: python run.py [--test] [--prefer=lmstudio|ollama|mock] [--verbose]
 """
 
-import sys
 import json
+import sys
 import time
-from pathlib import Path
-from typing import Tuple, Dict
 
 # Parse arguments
 prefer = "auto"
@@ -26,17 +24,18 @@ for arg in sys.argv:
         verbose = True
 
 from core.client import get_client
+
 llm_client = get_client(prefer=prefer)
 
-from tools.builtin import get_default_tools, execute_tool
-from knowledge_graph_manager import FluidKnowledgeGraph, get_enhanced_context
+from core.agency import get_agency
+from core.agentification import get_coding_team, get_self_improvement_team
+from core.pattern_recognition import get_pattern_recognizer
+from core.sentient_thinking import ThoughtType, get_sentient_thinking
 
 # New cognitive systems
 from core.thinking_engine import get_reasoning_engine
-from core.pattern_recognition import get_pattern_recognizer
-from core.agentification import get_coding_team, get_self_improvement_team
-from core.agency import get_agency, DecisionType
-from core.sentient_thinking import get_sentient_thinking, ThoughtType
+from knowledge_graph_manager import FluidKnowledgeGraph, get_enhanced_context
+from tools.builtin import execute_tool, get_default_tools
 
 
 class SelfLearningLLM:
@@ -65,7 +64,7 @@ class SelfLearningLLM:
         print(f"SL-LLM initialized with {self.model}")
         print(f"Tools: {[t['function']['name'] for t in self.tools]}")
         print(f"Knowledge Graph: {stats.get('bug_fix', 0)} bugs, {stats.get('performance', 0)} optimizations stored")
-        print(f"Cognitive Systems: Reasoning, Patterns, Agentification, Agency, Sentient Thinking")
+        print("Cognitive Systems: Reasoning, Patterns, Agentification, Agency, Sentient Thinking")
         if self.verbose:
             print("[VERBOSE MODE: ON]")
 
@@ -79,7 +78,7 @@ class SelfLearningLLM:
                 print(f"  Details: {str(details)[:200]}")
             print()
 
-    def execute_task(self, task: str, max_iterations: int = 5) -> Dict:
+    def execute_task(self, task: str, max_iterations: int = 5) -> dict:
         self._verbose_print("RECEIVING TASK", task)
         
         # === SENTIENT THINKING: Process incoming task ===
@@ -109,7 +108,7 @@ class SelfLearningLLM:
         enhanced_context, kg_metadata = get_enhanced_context(task)
         
         classification = kg_metadata.get("classification", {})
-        context_info = kg_metadata.get("context", {})
+        kg_metadata.get("context", {})
         
         self._verbose_print("KNOWLEDGE GRAPH", 
             f"Classified as: {classification.get('primary_category', 'general')}, "
@@ -119,16 +118,16 @@ class SelfLearningLLM:
         start = time.time()
         
         for i in range(max_iterations):
-            self._verbose_print(f"ITERATION {i+1}", f"Processing task...")
+            self._verbose_print(f"ITERATION {i+1}", "Processing task...")
             
             try:
                 full_prompt = f"{enhanced_context}\n\nUser: {task}"
-                self._verbose_print("CALLING LLM", f"Sending task + classified context to model")
+                self._verbose_print("CALLING LLM", "Sending task + classified context to model")
                 response = self.client.chat(
                     [{"role": "user", "content": full_prompt}], 
                     tools=self.tools
                 )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 return {"success": False, "error": str(e), "elapsed": time.time()-start}
             
             msg = response.get("message", {})
@@ -139,7 +138,7 @@ class SelfLearningLLM:
                     tool_name = call["function"]["name"]
                     try:
                         args = json.loads(call["function"]["arguments"])
-                    except:
+                    except Exception:  # noqa: BLE001
                         args = {"code": call["function"]["arguments"]}
                     
                     self._verbose_print("TOOL CALL", f"Using tool: {tool_name}", args)
@@ -154,7 +153,7 @@ class SelfLearningLLM:
                              {"role": "tool", "content": result, "tool_call_id": call.get("id", "call")}],
                             tools=self.tools
                         )
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         return {"success": False, "error": str(e)}
                     msg = response.get("message", {})
             
@@ -173,7 +172,7 @@ class SelfLearningLLM:
         
         return {"success": False, "output": "Max iterations", "elapsed": time.time()-start}
 
-    def run_self_learning_cycle(self, task: str) -> Dict:
+    def run_self_learning_cycle(self, task: str) -> dict:
         """Complete self-learning cycle with reflection"""
         
         self._verbose_print("SELF-LEARNING CYCLE", "Starting self-improvement loop with KG context")
@@ -228,7 +227,7 @@ class SelfLearningLLM:
                 print()
             except KeyboardInterrupt:
                 break
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"Error: {e}")
 
 
