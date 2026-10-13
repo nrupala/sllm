@@ -26,6 +26,7 @@ WebSocket:
 """
 
 import argparse
+import hmac
 import json
 import logging
 import sys
@@ -70,7 +71,18 @@ class DaemonConfig:
     prefer: str = "auto"  # lmstudio, ollama, llama.cpp, mock
     model: str = "local"
     cors_enabled: bool = True
-    api_key: str | None = None  # Optional API key
+    # Browser origins allowed by CORS. Localhost only by default: this
+    # daemon executes tools, so a wildcard origin would let any website a
+    # user visits drive it from the browser. Widen ONLY via explicit
+    # config (--cors-origins), and understand that any origin listed here
+    # can call the daemon with the user's browser behind it.
+    cors_origins: list[str] = field(default_factory=lambda: [
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        "http://localhost",
+        "http://127.0.0.1",
+    ])
+    api_key: str | None = None  # When set, enforced on all non-public routes
     max_concurrent: int = 4
     timeout: int = 300
     
@@ -291,15 +303,41 @@ class SLLMDaemon:
         
         app = self.app
         
-        # CORS
+        # CORS — localhost origins by default (see DaemonConfig). Never
+        # wildcard: with credentials allowed, "*" would let any website
+        # call this tool-executing daemon from a visitor's browser.
         if self.config.cors_enabled:
             app.add_middleware(
                 CORSMiddleware,
-                allow_origins=["*"],
+                allow_origins=self.config.cors_origins,
                 allow_credentials=True,
-                allow_methods=["*"],
-                allow_headers=["*"],
+                allow_methods=["GET", "POST", "OPTIONS"],
+                allow_headers=["Content-Type", "Authorization", "X-API-Key"],
             )
+
+        # API-key enforcement. When an api_key is configured it is checked
+        # on every route except the public liveness/info routes (/, /health)
+        # and CORS preflight (which carries no credentials by design).
+        # Accepts "Authorization: Bearer <key>" or "X-API-Key: <key>".
+        # When no key is configured the daemon keeps its previous open
+        # behaviour — set --api-key before exposing it beyond localhost.
+        if self.config.api_key:
+            from fastapi.responses import JSONResponse
+
+            @app.middleware("http")
+            async def require_api_key(request: Request, call_next):
+                if request.method == "OPTIONS" or request.url.path in ("/", "/health"):
+                    return await call_next(request)
+                provided = request.headers.get("x-api-key", "")
+                auth = request.headers.get("authorization", "")
+                if not provided and auth.startswith("Bearer "):
+                    provided = auth[len("Bearer "):].strip()
+                if not provided or not hmac.compare_digest(provided, self.config.api_key):
+                    return JSONResponse(
+                        {"detail": "A valid API key is required."},
+                        status_code=401,
+                    )
+                return await call_next(request)
         
         @app.get("/health")
         async def health():
@@ -485,8 +523,12 @@ def main():
                      choices=["auto", "lmstudio", "ollama", "llama.cpp", "mock"],
                      help="LLM backend preference")
     parser.add_argument("--model", default="local", help="Model name")
-    parser.add_argument("--api-key", help="API key (optional)")
+    parser.add_argument("--api-key", help="API key (enforced on all non-public routes when set)")
     parser.add_argument("--cors", action="bool", default=True, help="Enable CORS")
+    parser.add_argument("--cors-origins", default=None,
+                        help="Comma-separated browser origins allowed by CORS "
+                             "(default: localhost only). Widening this lets "
+                             "those websites call the daemon from a browser.")
     
     args = parser.parse_args()
     
@@ -496,7 +538,12 @@ def main():
         prefer=args.prefer,
         model=args.model,
         api_key=args.api_key,
-        cors_enabled=args.cors
+        cors_enabled=args.cors,
+        **(
+            {"cors_origins": [o.strip() for o in args.cors_origins.split(",") if o.strip()]}
+            if args.cors_origins
+            else {}
+        )
     )
     
     daemon = SLLMDaemon(config)
