@@ -6,7 +6,7 @@ Tests all new capabilities across all three phases
 import json
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -386,7 +386,7 @@ if __name__ == "__main__":
     
     # Generate results report
     report = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "total_tests": passed + failed,
         "passed": passed,
         "failed": failed,

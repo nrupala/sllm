@@ -3,7 +3,7 @@
 # See LICENSE for the full license text.
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
@@ -154,7 +154,7 @@ class MemoryStore:
     def save_episode(self, task: str, actions: list, result: str, metrics: dict):
         with open(self.episodes, "a") as f:
             f.write(json.dumps({
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "task": task,
                 "actions": actions,
                 "result": result,
@@ -164,7 +164,7 @@ class MemoryStore:
     def save_insight(self, insight: str, category: str):
         with open(self.insights, "a") as f:
             f.write(json.dumps({
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "insight": insight,
                 "category": category
             }) + "\n")
@@ -219,7 +219,7 @@ class VersionControl:
 
     def create_snapshot(self, label: str | None = None) -> str:
         import shutil
-        label = label or datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        label = label or datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         snapshot_path = self.snapshots / label
         
         for subdir in ["core", "tools", "eval"]:
