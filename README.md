@@ -13,6 +13,27 @@
 
 ---
 
+## Getting started
+
+**Install** (Python 3.8+):
+
+```bash
+pip install -r requirements.txt
+python bootstrap.py    # sets up Ollama and a local model
+python check_setup.py  # verifies the setup
+```
+
+**Run:**
+
+| Command | What it starts |
+|---|---|
+| `python run_local.py` | Local CLI runner (GGUF models directly, or via LM Studio / Ollama) |
+| `python run.py` | Full entry point with the cognitive integration |
+| `python gui_prod.py` | Production GUI — http://localhost:8080 |
+| `python daemon.py` | API server |
+
+Full documentation — models, tools, configuration, troubleshooting — is in [HELP.md](HELP.md).
+
 ## 🔐 Zero-Trust | Zero-Knowledge | Secure | Encrypted
 
 SL-LLM is built on **security-first principles** with no trust assumptions:
