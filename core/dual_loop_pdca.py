@@ -13,7 +13,7 @@ import json
 import re
 import uuid
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import ClassVar
 
@@ -323,7 +323,7 @@ class Generator:
             "task": task[:50],
             "knowledge_used": len(knowledge),
             "style": dict(self.style_preferences),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         })
         
         return None  # Actual generation done by LLM
@@ -391,7 +391,7 @@ class Discriminator:
             "task": task[:50],
             "score": score,
             "feedback": {k: v for k, v in feedback.items() if k != "grounding"},
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         })
         
         return {
@@ -626,7 +626,7 @@ class FactualGroundingEngine:
             "grounded": len(result["grounded_claims"]),
             "ungrounded": len(result["ungrounded_claims"]),
             "risk": result["hallucination_risk"],
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         })
         
         return result
@@ -674,7 +674,7 @@ class FactualGroundingEngine:
         self.verified_facts[fact_id] = {
             "content": content,
             "source": source,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
     
     def get_grounding_stats(self) -> dict:
@@ -756,7 +756,7 @@ class DualLoopPDCAWithGrounding:
         data = {
             "run_history_count": len(self.orchestrator.run_history),
             "grounding_stats": self.grounding.get_grounding_stats(),
-            "saved_at": datetime.now(timezone.utc).isoformat(),
+            "saved_at": datetime.now(UTC).isoformat(),
         }
         with open(self.state_file, "w") as f:
             json.dump(data, f, indent=2)

@@ -14,7 +14,7 @@ from collections import defaultdict
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -49,7 +49,7 @@ class ParallelTaskExecutor:
             task = TaskResult(
                 task_id=task_id,
                 status="pending",
-                started_at=datetime.now(timezone.utc).isoformat(),
+                started_at=datetime.now(UTC).isoformat(),
             )
             self.task_queue[task_id] = task
         
@@ -156,7 +156,7 @@ class ParallelTaskExecutor:
                 task = self.task_queue[task_id]
                 task.status = "completed"
                 task.result = result
-                task.completed_at = datetime.now(timezone.utc).isoformat()
+                task.completed_at = datetime.now(UTC).isoformat()
                 if task.started_at:
                     task.duration = (datetime.fromisoformat(task.completed_at) - datetime.fromisoformat(task.started_at)).total_seconds()
                 self.results[task_id] = task
@@ -165,7 +165,7 @@ class ParallelTaskExecutor:
                 task = self.task_queue[task_id]
                 task.status = "failed"
                 task.error = str(e)
-                task.completed_at = datetime.now(timezone.utc).isoformat()
+                task.completed_at = datetime.now(UTC).isoformat()
                 self.results[task_id] = task
 
 
@@ -207,7 +207,7 @@ class WebCache:
             return None
         
         cached_at = datetime.fromisoformat(entry["cached_at"])
-        age = (datetime.now(timezone.utc) - cached_at).total_seconds() / 3600
+        age = (datetime.now(UTC) - cached_at).total_seconds() / 3600
         
         if age > max_age_hours:
             return None
@@ -228,7 +228,7 @@ class WebCache:
             "url": url,
             "content": content,
             "metadata": metadata or {},
-            "cached_at": datetime.now(timezone.utc).isoformat(),
+            "cached_at": datetime.now(UTC).isoformat(),
         }
         
         with open(cache_file, "w") as f:
@@ -246,7 +246,7 @@ class WebCache:
         expired = []
         for key, entry in self.index.items():
             cached_at = datetime.fromisoformat(entry["cached_at"])
-            age = (datetime.now(timezone.utc) - cached_at).total_seconds() / 3600
+            age = (datetime.now(UTC) - cached_at).total_seconds() / 3600
             if age > max_age_hours:
                 expired.append(key)
         
@@ -297,7 +297,7 @@ class OfflineFirstWebAccess:
                 self.request_log.append({
                     "url": url,
                     "source": "cache",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 })
                 return {"source": "cache", "content": cached.get("content"), "cached_at": cached.get("cached_at")}
         
@@ -309,7 +309,7 @@ class OfflineFirstWebAccess:
                 self.request_log.append({
                     "url": url,
                     "source": "live",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 })
                 return {"source": "live", "content": content}
             except Exception as e:  # noqa: BLE001
@@ -319,7 +319,7 @@ class OfflineFirstWebAccess:
         self.request_log.append({
             "url": url,
             "source": "offline_no_cache",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         })
         return {"source": "offline", "error": "No cached content available and offline mode active"}
     
@@ -349,7 +349,7 @@ class CitationTracker:
             "claim": claim,
             "source": source,
             "confidence": confidence,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         })
     
     def add_uncited_claim(self, claim: str):
@@ -415,7 +415,7 @@ class EnhancedHallucinationPrevention:
         }
         
         self.validation_log.append({
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "citation_rate": result["citation_rate"],
             "uncited_claims": result["uncited_claims"],
         })
