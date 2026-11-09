@@ -7,7 +7,7 @@ This demonstrates that the system retains learned lessons for future use.
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 
@@ -19,7 +19,7 @@ def build_knowledge_graph():
     knowledge = {
         "knowledge_graph": {
             "version": "1.0",
-            "created": datetime.now(timezone.utc).isoformat(),
+            "created": datetime.now(UTC).isoformat(),
             "entities": [],
             "relationships": []
         }

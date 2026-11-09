@@ -14,7 +14,7 @@ import json
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import ClassVar
@@ -128,7 +128,7 @@ class RewardMemory:
             "breakdown": breakdown,
             "phase_results": phase_results,
             "knowledge_extracted": knowledge_extracted,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         self.entries.append(entry)
         
@@ -257,7 +257,7 @@ class PDCAEngine:
             overall_result="in_progress",
             reward=0.0,
             knowledge_gained=[],
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
         )
         self.active_cycles.append(cycle)
         return cycle_id
@@ -294,7 +294,7 @@ class PDCAEngine:
             action=f"Planned approach: {strategy}",
             result=json.dumps(plan),
             metrics={"complexity": complexity, "risks_count": len(risks)},
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             success=True,
         )
         cycle.steps.append(step)
@@ -320,7 +320,7 @@ class PDCAEngine:
                 "elapsed": elapsed,
                 "output_length": len(output),
             },
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             success=success,
         )
         cycle.steps.append(step)
@@ -387,7 +387,7 @@ class PDCAEngine:
             action="Evaluated results",
             result=f"Reward: {reward:.2f}, Passed: {check_result['passed']}",
             metrics=scores,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             success=bool(check_result["passed"]),
         )
         cycle.steps.append(step)
@@ -420,7 +420,7 @@ class PDCAEngine:
             action=f"Applied {action} based on reward {cycle.reward:.2f}",
             result=json.dumps(improvements),
             metrics={"action": action, "reward": cycle.reward},
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             success=passed,
         )
         cycle.steps.append(step)
@@ -445,7 +445,7 @@ class PDCAEngine:
             "result": cycle.overall_result,
             "reward": cycle.reward,
             "improvements": improvements,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         })
         
         return {
@@ -749,7 +749,7 @@ class PDCAEngine:
             ],
             "reward_memory": self.reward_memory.to_dict(),
             "improvement_log": self.improvement_log[-50:],
-            "saved_at": datetime.now(timezone.utc).isoformat(),
+            "saved_at": datetime.now(UTC).isoformat(),
         }
         
         path = Path(filepath)
@@ -817,7 +817,7 @@ class KnowledgeGraphGrowthManager:
             "objective": objective,
             "reward": reward,
             "actions": growth_actions,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         })
         
         return {

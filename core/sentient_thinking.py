@@ -11,7 +11,7 @@ SL-LLM Sentient Thinking System
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
 
@@ -46,7 +46,7 @@ class Thought:
     depth: int = 1                  # How deep the thinking goes
     confidence: float = 0.5
     emotional_state: EmotionalState = EmotionalState.FOCUSED
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
 @dataclass
@@ -126,7 +126,7 @@ class SelfReflection:
             "what_worked": [],
             "what_didnt": [],
             "lessons": [],
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
         
         # Analyze what worked
@@ -187,7 +187,7 @@ class EmotionalIntelligence:
         self.state_history.append({
             "state": self.current_state.value,
             "confidence": confidence,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         })
         
         return self.current_state
@@ -285,7 +285,7 @@ class SentientThinking:
         )
         
         # Update state
-        self.self_model["last_update"] = datetime.now(timezone.utc).isoformat()
+        self.self_model["last_update"] = datetime.now(UTC).isoformat()
         self.self_model["total_thoughts"] = len(self.stream.thoughts)
     
     def get_status(self) -> dict:

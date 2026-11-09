@@ -16,7 +16,7 @@ import json
 import math
 import re
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -328,7 +328,7 @@ class MultiFactorScorer:
         """Calculate recency score (newer = higher score)"""
         try:
             doc_time = datetime.fromisoformat(timestamp)
-            age = (datetime.now(timezone.utc) - doc_time).total_seconds() / 86400
+            age = (datetime.now(UTC) - doc_time).total_seconds() / 86400
             return max(0.0, 1.0 - (age / max_age_days))
         except Exception:  # noqa: BLE001
             return 0.5
@@ -523,9 +523,8 @@ class SentientRetrievalAugmentor:
             if "faster" in content or "algorithm" in content:
                 score += 0.2
         
-        elif emotional_context["primary_emotion"] == "satisfied":
-            if "success" in content or "passed" in content:
-                score += 0.2
+        elif emotional_context["primary_emotion"] == "satisfied" and ("success" in content or "passed" in content):
+            score += 0.2
         
         if emotional_context.get("empathy_needed"):
             if "witnessed" in category:
@@ -729,7 +728,7 @@ class FluidKnowledgeGraph:
             # Create binary package
             binary_data = {
                 "version": "1.0",
-                "exported": datetime.now(timezone.utc).isoformat(),
+                "exported": datetime.now(UTC).isoformat(),
                 "insights": insights,
                 "episodes": episodes,
                 "category_counts": self._get_category_counts()
@@ -776,7 +775,7 @@ class FluidKnowledgeGraph:
             return {
                 "exists": True,
                 "size_bytes": Path(self.binary_file).stat().st_size,
-                "exported": datetime.fromtimestamp(Path(self.binary_file).stat().st_mtime, tz=timezone.utc).isoformat()
+                "exported": datetime.fromtimestamp(Path(self.binary_file).stat().st_mtime, tz=UTC).isoformat()
             }
         return {"exists": False}
     

@@ -7,7 +7,7 @@ Demonstrates: Generate bug -> Execute to Witness Error -> Reflect -> Fix -> Veri
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 RESULTS: list = []
@@ -17,7 +17,7 @@ Path(BASE).mkdir(parents=True, exist_ok=True)
 
 def log_step(phase, message, data=None):
     entry = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "phase": phase,
         "message": message,
         "data": data
@@ -232,7 +232,7 @@ def save_results(result):
     with open(json_path, "w") as f:
         json.dump({
             "test_name": "Rigorous Self-Learning (Witness Error)",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "result": result,
             "steps": RESULTS
         }, f, indent=2)

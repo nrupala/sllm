@@ -15,7 +15,7 @@ import hmac
 import json
 import secrets
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 
@@ -39,7 +39,7 @@ class SecurityContext:
     session_id: str
     trust_level: TrustLevel = TrustLevel.UNTRUSTED
     encryption_mode: EncryptionMode = EncryptionMode.NONE
-    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     last_verified: str | None = None
     integrity_hash: str | None = None
 
@@ -116,7 +116,7 @@ class ZeroTrustManager:
         """Update trust level after verification"""
         if session_id in self.sessions:
             self.sessions[session_id].trust_level = level
-            self.sessions[session_id].last_verified = datetime.now(timezone.utc).isoformat()
+            self.sessions[session_id].last_verified = datetime.now(UTC).isoformat()
     
     def block_principal(self, principal: str):
         """Block untrusted principal"""
@@ -195,7 +195,7 @@ class ZeroKnowledgeCryptographer:
         return {
             "hash": self.hash_data(secret),
             "signature": self.hmac_sign(secret),
-            "created": datetime.now(timezone.utc).isoformat()
+            "created": datetime.now(UTC).isoformat()
         }
 
 
@@ -234,7 +234,7 @@ class SecureStorage:
         record = {
             "encrypted": encrypted,
             "signature": signature,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
         
         file_path = self.storage_path / f"{key}.json"
@@ -272,7 +272,7 @@ class SecurityAuditor:
     def log_operation(self, operation: str, principal: str, result: str, metadata: dict | None = None):
         """Log security-relevant operation"""
         entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "operation": operation,
             "principal": principal,
             "result": result,

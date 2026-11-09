@@ -11,7 +11,7 @@ SL-LLM Agency System
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
 
@@ -38,7 +38,7 @@ class ReasoningStep:
     evidence: list[str] = field(default_factory=list)
     alternatives_considered: list[str] = field(default_factory=list)
     confidence: float = 0.5
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
 @dataclass
@@ -52,7 +52,7 @@ class Decision:
     confidence: float
     ethical_checks: list[dict]
     outcome: dict | None = None
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
 class Agency:
@@ -79,7 +79,7 @@ class Agency:
             "goal": goal,
             "priority": priority,
             "deadline": deadline,
-            "created": datetime.now(timezone.utc).isoformat(),
+            "created": datetime.now(UTC).isoformat(),
             "status": "active"
         })
     
