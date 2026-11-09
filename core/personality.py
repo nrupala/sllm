@@ -17,7 +17,7 @@ import math
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import ClassVar
 
@@ -234,7 +234,7 @@ class EmotionalMemory:
             intensity=intensity,
             outcome=outcome,
             lesson=lesson,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
         )
         self.experiences.append(exp)
         
@@ -305,7 +305,7 @@ class EmotionalMemory:
     
     def _decay_old_experiences(self):
         """Gradually reduce weight of older experiences"""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         for exp in self.experiences:
             try:
                 exp_time = datetime.fromisoformat(exp.timestamp)
@@ -345,8 +345,8 @@ class Identity:
     def __init__(self, name: str = "SL-LLM"):
         self.name = name
         self.id = str(uuid.uuid4())
-        self.created = datetime.now(timezone.utc).isoformat()
-        self.last_active = datetime.now(timezone.utc).isoformat()
+        self.created = datetime.now(UTC).isoformat()
+        self.last_active = datetime.now(UTC).isoformat()
         self.session_count = 0
         self.total_interactions = 0
         self.core_memories: list[dict] = []  # Defining moments
@@ -361,7 +361,7 @@ class Identity:
     def record_interaction(self, user_id: str = "default"):
         """Record an interaction"""
         self.total_interactions += 1
-        self.last_active = datetime.now(timezone.utc).isoformat()
+        self.last_active = datetime.now(UTC).isoformat()
         
         if user_id not in self.relationships:
             self.relationships[user_id] = {
@@ -377,7 +377,7 @@ class Identity:
         """Add a defining moment to identity"""
         self.core_memories.append({
             "memory": memory,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         })
         # Keep only most important memories
         if len(self.core_memories) > 20:
@@ -449,7 +449,7 @@ class BehavioralAdapter:
             "user_id": user_id,
             "preference": preference,
             "value": value,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         })
     
     def get_behavioral_recommendations(self, context: str) -> dict:
@@ -609,7 +609,7 @@ class Personality:
             "values": self.values.to_dict(),
             "emotional_memory": self.emotional_memory.to_dict(),
             "behavioral_adapter": self.behavioral_adapter.to_dict(),
-            "saved_at": datetime.now(timezone.utc).isoformat(),
+            "saved_at": datetime.now(UTC).isoformat(),
         }
         
         path = Path(filepath)

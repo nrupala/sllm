@@ -11,7 +11,7 @@ modifies the code to fix it, and verifies the fix works.
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 RESULTS: list = []
@@ -21,7 +21,7 @@ Path(BASE).mkdir(parents=True, exist_ok=True)
 
 def log_step(phase, message, data=None):
     entry = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "phase": phase,
         "message": message,
         "data": data
@@ -226,7 +226,7 @@ def save_results(result):
     with open(json_path, "w") as f:
         json.dump({
             "test_name": "Self-Learning Code Fix Cycle",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "result": result,
             "steps": RESULTS
         }, f, indent=2)
@@ -235,7 +235,7 @@ def save_results(result):
     md_path = f"{BASE}/self_learning_report.md"
     with open(md_path, "w") as f:
         f.write("# SL-LLM Self-Learning Test Report\n\n")
-        f.write(f"**Date:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        f.write(f"**Date:** {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S')}\n\n")
         f.write(f"**Status:** {'PASSED' if result['overall_success'] else 'FAILED'}\n\n")
         f.write("## Test Scenario\n\n")
         f.write("1. Generate code with deliberate bug (no zero-check in division)\n")

@@ -7,7 +7,7 @@ Tests self-learning and self-improvement capabilities
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 TEST_RESULTS: list = []
@@ -17,7 +17,7 @@ Path(BASE_PATH).mkdir(parents=True, exist_ok=True)
 
 def log_test(name, passed, details=""):
     result = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "test": name,
         "passed": passed,
         "details": details
@@ -303,7 +303,7 @@ def save_results():
     md_path = f"{BASE_PATH}/test_report.md"
     with open(md_path, "w") as f:
         f.write("# SL-LLM Test Results\n\n")
-        f.write(f"**Date:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        f.write(f"**Date:** {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S')}\n\n")
         f.write("## Summary\n\n")
         f.write(f"- Total Tests: {summary['total_tests']}\n")
         f.write(f"- Passed: {summary['passed']}\n")

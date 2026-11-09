@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -16,15 +16,15 @@ logger = logging.getLogger(__name__)
 class ConversationMessage:
     role: str
     content: str
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     metadata: dict = field(default_factory=dict)
 
 
 @dataclass
 class Session:
     session_id: str
-    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    last_activity: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
+    last_activity: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     message_count: int = 0
     context_window: list[ConversationMessage] = field(default_factory=list)
     max_context: int = 20
@@ -47,7 +47,7 @@ class ContextManager:
         msg = ConversationMessage(role=role, content=content, metadata=metadata or {})
         session.context_window.append(msg)
         session.message_count += 1
-        session.last_activity = datetime.now(timezone.utc).isoformat()
+        session.last_activity = datetime.now(UTC).isoformat()
 
         if len(session.context_window) > self.max_context:
             session.context_window = session.context_window[-self.max_context:]

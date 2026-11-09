@@ -19,7 +19,7 @@ Tests:
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -592,7 +592,7 @@ def test_intelligence_benchmark():
     # Run comprehensive analysis
     
     results = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "system": "SL-LLM Sentient Intelligence",
         "capabilities": {},
         "knowledge_graph": {},

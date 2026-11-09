@@ -9,7 +9,7 @@ import json
 import shutil
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import ClassVar
 
@@ -48,7 +48,7 @@ class PersistentMemoryManager:
     
     def save_all(self, state: dict | None = None) -> dict:
         """Save all persistent state with backup"""
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         backup_path = self.backup_dir / f"backup_{timestamp}"
         backup_path.mkdir(parents=True, exist_ok=True)
         
@@ -64,7 +64,7 @@ class PersistentMemoryManager:
         
         # Save persistence state
         persistence_state = {
-            "last_save": datetime.now(timezone.utc).isoformat(),
+            "last_save": datetime.now(UTC).isoformat(),
             "save_count": self.save_count + 1,
             "backup_path": str(backup_path),
             "saved_files": saved_files,
@@ -75,7 +75,7 @@ class PersistentMemoryManager:
             json.dump(persistence_state, f, indent=2)
         
         self.save_count += 1
-        self.last_save = datetime.now(timezone.utc)
+        self.last_save = datetime.now(UTC)
         
         return {
             "saved": saved_files,
@@ -132,11 +132,11 @@ class CrossInstanceSync:
     
     def export_state(self, state: dict) -> str:
         """Export state for other instances to import"""
-        export_file = self.sync_dir / f"state_{self.instance_id}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
+        export_file = self.sync_dir / f"state_{self.instance_id}_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.json"
         
         export_data = {
             "instance_id": self.instance_id,
-            "exported_at": datetime.now(timezone.utc).isoformat(),
+            "exported_at": datetime.now(UTC).isoformat(),
             "state": state,
         }
         
@@ -146,7 +146,7 @@ class CrossInstanceSync:
         self.sync_log.append({
             "action": "export",
             "file": str(export_file),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         })
         
         return str(export_file)
@@ -164,7 +164,7 @@ class CrossInstanceSync:
             "action": "import",
             "source": data.get("instance_id", "unknown"),
             "file": str(path),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         })
         
         return {
@@ -238,7 +238,7 @@ class StrategicPlanner:
             description=description,
             priority=priority,
             status="active",
-            created=datetime.now(timezone.utc).isoformat(),
+            created=datetime.now(UTC).isoformat(),
             deadline=deadline,
         )
         self.goals[goal_id] = goal
@@ -267,7 +267,7 @@ class StrategicPlanner:
                 description=f"Subgoal of {self.goals[goal_id].name}",
                 priority=self.goals[goal_id].priority * 0.8,
                 status="active",
-                created=datetime.now(timezone.utc).isoformat(),
+                created=datetime.now(UTC).isoformat(),
             )
             self._save()
         return subgoal_id
@@ -343,7 +343,7 @@ class StrategicPlanner:
                 for gid, g in self.goals.items()
             },
             "plan_history": self.plan_history[-50:],
-            "saved_at": datetime.now(timezone.utc).isoformat(),
+            "saved_at": datetime.now(UTC).isoformat(),
         }
         
         self.state_file.parent.mkdir(parents=True, exist_ok=True)
