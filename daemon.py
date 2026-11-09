@@ -32,7 +32,7 @@ import logging
 import sys
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 # Configure logging
@@ -153,7 +153,7 @@ class SecureExecutor:
             
             # Log execution
             self.execution_log.append({
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "action": action,
                 "args_keys": list(args.keys()),
                 "result_len": len(result)
@@ -265,7 +265,7 @@ class SLLMCore:
         """Create new session"""
         session_id = str(uuid.uuid4())[:8]
         self.sessions[session_id] = {
-            "created": datetime.now(timezone.utc).isoformat(),
+            "created": datetime.now(UTC).isoformat(),
             "messages": [],
             "context": {}
         }
@@ -286,7 +286,7 @@ class SLLMDaemon:
     def __init__(self, config: DaemonConfig):
         self.config = config
         self.core = SLLMCore(config)
-        self.started = datetime.now(timezone.utc)
+        self.started = datetime.now(UTC)
         
         if FASTAPI_AVAILABLE:
             self.app = FastAPI(
@@ -344,7 +344,7 @@ class SLLMDaemon:
             """Health check"""
             return {
                 "status": "healthy",
-                "uptime": (datetime.now(timezone.utc) - self.started).total_seconds(),
+                "uptime": (datetime.now(UTC) - self.started).total_seconds(),
                 "gpu": GPU_INFO[0],
                 "llm_backend": self.config.prefer,
                 "sessions": len(self.core.sessions)
@@ -379,7 +379,7 @@ class SLLMDaemon:
             return {
                 "id": f"chatcmpl-{uuid.uuid4().hex[:8]}",
                 "object": "chat.completion",
-                "created": int(datetime.now(timezone.utc).timestamp()),
+                "created": int(datetime.now(UTC).timestamp()),
                 "model": self.config.model,
                 "choices": [{
                     "index": 0,
@@ -407,7 +407,7 @@ class SLLMDaemon:
             return {
                 "id": f"cmpl-{uuid.uuid4().hex[:8]}",
                 "object": "text_completion",
-                "created": int(datetime.now(timezone.utc).timestamp()),
+                "created": int(datetime.now(UTC).timestamp()),
                 "model": self.config.model,
                 "choices": [{
                     "text": result.get("content", ""),

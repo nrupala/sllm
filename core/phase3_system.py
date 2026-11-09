@@ -9,7 +9,7 @@ import ast
 import json
 import re
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import ClassVar
 
@@ -137,7 +137,7 @@ class SecurityAudit:
             self.violations.append({
                 "type": "rate_limit_exceeded",
                 "input_type": input_type,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             })
             return {"allowed": False, "reason": "Rate limit exceeded"}
         
@@ -159,7 +159,7 @@ class SecurityAudit:
         self.audit_log.append({
             "type": input_type,
             "result": result,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         })
         
         if warnings:
@@ -167,7 +167,7 @@ class SecurityAudit:
                 "type": "input_warning",
                 "input_type": input_type,
                 "warnings": warnings,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             })
         
         return result
@@ -198,8 +198,8 @@ class InstanceRegistry:
         """Register a new instance"""
         self.instances[instance_id] = {
             "id": instance_id,
-            "registered_at": datetime.now(timezone.utc).isoformat(),
-            "last_heartbeat": datetime.now(timezone.utc).isoformat(),
+            "registered_at": datetime.now(UTC).isoformat(),
+            "last_heartbeat": datetime.now(UTC).isoformat(),
             "status": "active",
             "metadata": metadata or {},
             "tasks_processed": 0,
@@ -210,7 +210,7 @@ class InstanceRegistry:
     def heartbeat(self, instance_id: str) -> bool:
         """Update instance heartbeat"""
         if instance_id in self.instances:
-            self.instances[instance_id]["last_heartbeat"] = datetime.now(timezone.utc).isoformat()
+            self.instances[instance_id]["last_heartbeat"] = datetime.now(UTC).isoformat()
             self.instances[instance_id]["status"] = "active"
             self._save()
             return True
@@ -224,7 +224,7 @@ class InstanceRegistry:
     
     def get_active_instances(self) -> list[dict]:
         """Get all active instances"""
-        cutoff = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+        cutoff = (datetime.now(UTC) - timedelta(minutes=5)).isoformat()
         return [
             inst for inst in self.instances.values()
             if inst["last_heartbeat"] > cutoff
@@ -293,10 +293,9 @@ class CodeVerifier:
                 if isinstance(node.func, ast.Name) and node.func.id in self.DANGEROUS_FUNCTIONS:
                     issues.append(f"Dangerous function: {node.func.id} at line {node.lineno}")
                     passed = False
-                elif isinstance(node.func, ast.Attribute):
-                    if node.func.attr in self.DANGEROUS_FUNCTIONS:
-                        issues.append(f"Dangerous method: {node.func.attr} at line {node.lineno}")
-                        passed = False
+                elif isinstance(node.func, ast.Attribute) and node.func.attr in self.DANGEROUS_FUNCTIONS:
+                    issues.append(f"Dangerous method: {node.func.attr} at line {node.lineno}")
+                    passed = False
             
             # Check for dangerous imports
             if isinstance(node, ast.Import):
@@ -332,7 +331,7 @@ class CodeVerifier:
         }
         
         self.verification_log.append({
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "valid": passed,
             "issues_count": len(issues),
             "warnings_count": len(warnings),

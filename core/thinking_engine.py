@@ -10,7 +10,7 @@ Integrates: Psychology, Critical Thinking, Logic, Graph Theory,
 import math
 import re
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 class ThinkingToolbox:
@@ -326,7 +326,7 @@ class ReasoningEngine:
             "lateral_perspectives": perspectives,
             "first_principles": first_principles,
             "inversion_thinking": inversion,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
     
     def analyze_code_quality(self, code: str) -> dict:
