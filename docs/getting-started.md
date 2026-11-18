@@ -2,8 +2,8 @@
 
 ## Requirements
 
-- Python 3.8+
-- LM Studio or Ollama
+- Python 3.10+
+- A local model backend: GGUF via LM Studio / llama.cpp, or Ollama (optional)
 - GPU (recommended)
 
 ## Installation

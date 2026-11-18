@@ -66,10 +66,10 @@ def check_gpu():
 def check_python():
     """Check Python version"""
     v = sys.version_info
-    if v.major >= 3 and v.minor >= 8:
+    if (v.major, v.minor) >= (3, 10):
         print(f"[PASS] Python {v.major}.{v.minor}.{v.micro}")
         return True
-    print(f"[FAIL] Python {v.major}.{v.minor} (need 3.8+)")
+    print(f"[FAIL] Python {v.major}.{v.minor} (need 3.10+)")
     return False
 
 
