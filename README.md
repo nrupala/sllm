@@ -2,7 +2,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
-  <img src="https://img.shields.io/badge/Python-3.8+-blue.svg" alt="Python">
+  <img src="https://img.shields.io/badge/Python-3.10+-blue.svg" alt="Python">
   <img src="https://img.shields.io/badge/AI-Self%20Improving-orange" alt="AI">
   <a href="https://github.com/sponsors/nrupala"><img src="https://img.shields.io/badge/Sponsor-nrupala-orange?logo=github" alt="GitHub Sponsor"></a>
 </p>
@@ -15,11 +15,11 @@
 
 ## Getting started
 
-**Install** (Python 3.8+):
+**Install** (Python 3.10+):
 
 ```bash
 pip install -r requirements.txt
-python bootstrap.py    # sets up Ollama and a local model
+python bootstrap.py    # optional: installs Ollama + a model (skip if you use GGUF / LM Studio)
 python check_setup.py  # verifies the setup
 ```
 
@@ -34,15 +34,15 @@ python check_setup.py  # verifies the setup
 
 Full documentation — models, tools, configuration, troubleshooting — is in [HELP.md](HELP.md).
 
-## 🔐 Zero-Trust | Zero-Knowledge | Secure | Encrypted
+## Security model
 
-SL-LLM is built on **security-first principles** with no trust assumptions:
+SL-LLM is designed to run locally with deny-by-default controls. What the code does today:
 
 | Feature | Description |
 |---------|-------------|
 | **Zero-Trust** | Never trust, always verify. Every request authenticated and validated |
-| **Zero-Knowledge** | Your data remains yours. Encryption keys never leave your system |
-| **End-to-End Encryption** | All sensitive data encrypted at rest and in transit |
+| **Local keys** | Encryption keys are generated and kept on your machine |
+| **Encryption at rest** | Sensitive stored data is encrypted on disk. Local-only operation means no network transit by default; the daemon API should be bound to localhost |
 | **Secure by Default** | Deny-by-default policies, audit logging, integrity verification |
 | **Local-Only** | Runs entirely offline. No data leaves your machine |
 | **HMAC Signing** | All stored data integrity-verified |
@@ -51,7 +51,7 @@ SL-LLM is built on **security-first principles** with no trust assumptions:
 
 ```
 ┌─────────────────────────────────────────────┐
-│           Zero-Trust Security               │
+│           Security layers               │
 ├─────────────────────────────────────────────┤
 │  ┌─────────────┐  ┌─────────────────────┐ │
 │  │ ZeroKnowledge│  │ Zero-Trust Manager  │ │
@@ -79,7 +79,7 @@ SL-LLM integrates **human-inspired thinking** for superior reasoning:
 | **Design Pattern Recognition** | Identifies and applies GoF patterns (Singleton, Factory, Observer, Strategy, etc.) |
 | **Agentification** | Multi-agent collaboration with specialized roles (Orchestrator, Planner, Executor, Critic) |
 | **Agency** | Autonomous decision-making with full reasoning trace and ethical constraints |
-| **Sentient Thinking** | Self-aware processing, metacognition, reflection, emotional intelligence |
+| **Reflective reasoning** | Structured self-review and reflection prompts (a reasoning technique, not a claim of awareness) |
 
 ---
 

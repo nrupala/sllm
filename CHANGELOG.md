@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Docs honesty pass (2026-11-18): README security section now states only what the code does (local keys, encryption at rest, localhost daemon); removed "Zero-Knowledge", "in transit" and "Sentient Thinking" claims; reflective reasoning described as a technique.
+- Ollama is documented as an optional backend; GGUF via LM Studio / llama.cpp listed first.
+- Minimum Python raised to 3.10 (3.8 is end-of-life): README, docs/getting-started.md and check_setup.py updated together.
+
 ### Added
 - Portfolio certification: PR-flow discipline documented in CONTRIBUTING.md
   (draft PR -> tests green -> owner merges; no direct pushes to main; each PR
